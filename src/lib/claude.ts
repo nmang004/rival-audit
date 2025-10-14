@@ -1,9 +1,122 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { ClaudeAnalysisResult, AccessibilityResult } from '@/types';
+import sharp from 'sharp';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
 });
+
+// Resize image to ensure no dimension exceeds Claude's 8000px limit
+async function resizeImageForClaude(imageBuffer: Buffer): Promise<Buffer> {
+  const MAX_DIMENSION = 7500; // Leave buffer below 8000px limit
+
+  const image = sharp(imageBuffer);
+  const metadata = await image.metadata();
+
+  if (!metadata.width || !metadata.height) {
+    return imageBuffer;
+  }
+
+  // Check if resizing is needed
+  if (metadata.width <= MAX_DIMENSION && metadata.height <= MAX_DIMENSION) {
+    return imageBuffer;
+  }
+
+  // Resize maintaining aspect ratio
+  return image
+    .resize(MAX_DIMENSION, MAX_DIMENSION, {
+      fit: 'inside',
+      withoutEnlargement: true,
+    })
+    .png()
+    .toBuffer();
+}
+
+// Retry helper with exponential backoff
+async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  maxRetries = 3,
+  initialDelay = 1000
+): Promise<T> {
+  let lastError: Error | undefined;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error: unknown) {
+      lastError = error as Error;
+      const isRetryable = (error as { status?: number }).status === 529;
+
+      if (!isRetryable || attempt === maxRetries - 1) {
+        throw error;
+      }
+
+      const delay = initialDelay * Math.pow(2, attempt);
+      console.log(`Claude API overloaded, retrying in ${delay}ms (attempt ${attempt + 1}/${maxRetries})`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+
+  throw lastError;
+}
+
+// Analyze a single screenshot
+async function analyzeSingleScreenshot(
+  screenshot: Buffer,
+  viewportType: 'desktop' | 'mobile',
+  url: string,
+  contextData: string
+): Promise<{ designScore: number; observations: string[] }> {
+  const resized = await resizeImageForClaude(screenshot);
+
+  const message = await retryWithBackoff(() => anthropic.messages.create({
+    model: 'claude-sonnet-4-5-20250929',
+    max_tokens: 2048,
+    messages: [
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: 'image/png',
+              data: resized.toString('base64'),
+            },
+          },
+          {
+            type: 'text',
+            text: `Analyze this ${viewportType} screenshot of ${url}.
+
+${contextData}
+
+Evaluate based on these criteria:
+1. **Design Modernity**: Visual design, typography, color scheme, overall aesthetic
+2. **UI/UX Quality**: Navigation clarity, call-to-action prominence, user flow
+3. **Visual Hierarchy**: Information architecture and content organization
+4. **Brand Perception**: Professional appearance and trust signals
+${viewportType === 'mobile' ? '5. **Mobile Optimization**: Touch targets, readability, responsive layout' : '5. **Desktop Layout**: Use of space, content density, visual balance'}
+
+Provide a JSON response:
+{
+  "designScore": <number 1-10>,
+  "observations": ["<specific observation 1>", "<specific observation 2>", "<specific observation 3>", "<specific observation 4>"]
+}`,
+          },
+        ],
+      },
+    ],
+  }));
+
+  const responseText = message.content[0].type === 'text' ? message.content[0].text : '';
+  const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+
+  if (!jsonMatch) {
+    return { designScore: 5, observations: [] };
+  }
+
+  return JSON.parse(jsonMatch[0]);
+}
 
 export async function analyzeWithClaude(
   desktopScreenshot: Buffer,
@@ -17,70 +130,69 @@ export async function analyzeWithClaude(
   }
 ): Promise<ClaudeAnalysisResult> {
   try {
-    const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4096,
+    const contextData = `CONTEXT:
+- Accessibility Score: ${accessibilityData.score}/100
+- Violations: ${accessibilityData.violations.length} (${accessibilityData.violations.filter((v) => v.impact === 'critical').length} critical)
+- Meta Title: ${seoData.metaTitle || 'Missing'}
+- H1 Tags: ${seoData.h1Tags?.length || 0}`;
+
+    // Analyze desktop and mobile separately to reduce payload
+    console.log('[Claude] Analyzing desktop screenshot...');
+    const desktopAnalysis = await analyzeSingleScreenshot(
+      desktopScreenshot,
+      'desktop',
+      url,
+      contextData
+    );
+
+    console.log('[Claude] Analyzing mobile screenshot...');
+    const mobileAnalysis = await analyzeSingleScreenshot(
+      mobileScreenshot,
+      'mobile',
+      url,
+      contextData
+    );
+
+    // Combine analyses with a final synthesis request
+    console.log('[Claude] Synthesizing final analysis...');
+    const message = await retryWithBackoff(() => anthropic.messages.create({
+      model: 'claude-sonnet-4-5-20250929',
+      max_tokens: 2048,
       messages: [
         {
           role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: 'image/png',
-                data: desktopScreenshot.toString('base64'),
-              },
-            },
-            {
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: 'image/png',
-                data: mobileScreenshot.toString('base64'),
-              },
-            },
-            {
-              type: 'text',
-              text: `You are an expert web design and UX analyst performing a comprehensive website audit for a sales team.
+          content: `You are an expert web design and UX analyst. Create a comprehensive sales-ready audit report for ${url}.
 
-URL: ${url}
+DESKTOP ANALYSIS (Score: ${desktopAnalysis.designScore}/10):
+${desktopAnalysis.observations.map((obs, i) => `${i + 1}. ${obs}`).join('\n')}
 
-CONTEXT DATA:
-- Accessibility Score: ${accessibilityData.score}/100
-- Total Accessibility Violations: ${accessibilityData.violations.length}
-- Critical Violations: ${accessibilityData.violations.filter((v) => v.impact === 'critical').length}
-- Meta Title: ${seoData.metaTitle || 'Missing'}
-- Meta Description: ${seoData.metaDescription || 'Missing'}
-- H1 Tags: ${seoData.h1Tags?.join(', ') || 'None found'}
+MOBILE ANALYSIS (Score: ${mobileAnalysis.designScore}/10):
+${mobileAnalysis.observations.map((obs, i) => `${i + 1}. ${obs}`).join('\n')}
 
-TASK:
-Analyze the desktop and mobile screenshots provided and give a comprehensive assessment suitable for presenting to a potential client.
+${contextData}
 
-Please provide your analysis in the following JSON format:
-{
-  "designScore": <number 1-10>,
-  "analysis": "<comprehensive multi-paragraph analysis>",
-  "strengths": ["<strength 1>", "<strength 2>", "<strength 3>"],
-  "weaknesses": ["<weakness 1>", "<weakness 2>", "<weakness 3>"],
-  "recommendations": ["<recommendation 1>", "<recommendation 2>", "<recommendation 3>", "<recommendation 4>", "<recommendation 5>"]
-}
-
-ANALYSIS CRITERIA:
-1. **Design Modernity** (1-10 score): Evaluate visual design, typography, color scheme, and overall aesthetic
-2. **Mobile Responsiveness**: Compare desktop vs mobile experience
+EVALUATION CRITERIA:
+1. **Design Modernity**: Visual design, typography, color scheme, and overall aesthetic
+2. **Mobile Responsiveness**: Compare desktop vs mobile experience quality
 3. **UI/UX Quality**: Navigation clarity, call-to-action prominence, user flow
 4. **Visual Hierarchy**: Information architecture and content organization
 5. **Brand Perception**: Professional appearance and trust signals
 6. **Accessibility Impact**: How accessibility issues affect user experience
 7. **Competitive Positioning**: How it compares to modern web standards
 
-The analysis should be persuasive and highlight opportunities for improvement while acknowledging what works well. Format it professionally for a sales pitch to the website owner.`,
-            },
-          ],
+Create a comprehensive JSON report:
+{
+  "designScore": <average of desktop and mobile scores, 1-10>,
+  "analysis": "<2-3 paragraph professional analysis covering the criteria above, suitable for presenting to a potential client>",
+  "strengths": ["<specific strength 1>", "<specific strength 2>", "<specific strength 3>"],
+  "weaknesses": ["<specific weakness 1>", "<specific weakness 2>", "<specific weakness 3>"],
+  "recommendations": ["<actionable recommendation 1>", "<actionable recommendation 2>", "<actionable recommendation 3>", "<actionable recommendation 4>", "<actionable recommendation 5>"]
+}
+
+Make it persuasive and highlight opportunities for improvement while acknowledging what works well. Format professionally for a sales pitch.`,
         },
       ],
-    });
+    }));
 
     // Parse Claude's response
     const responseText = message.content[0].type === 'text' ? message.content[0].text : '';
@@ -109,10 +221,10 @@ The analysis should be persuasive and highlight opportunities for improvement wh
 export async function analyzeSitemapForGaps(
   urls: string[],
   domain: string
-): Promise<{ contentGaps: any[]; urlStructureIssues: any[] }> {
+): Promise<{ contentGaps: unknown[]; urlStructureIssues: unknown[] }> {
   try {
-    const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+    const message = await retryWithBackoff(() => anthropic.messages.create({
+      model: 'claude-sonnet-4-5-20250929',
       max_tokens: 2048,
       messages: [
         {
@@ -142,7 +254,7 @@ Respond in this JSON format:
 }`,
         },
       ],
-    });
+    }));
 
     const responseText = message.content[0].type === 'text' ? message.content[0].text : '';
     const jsonMatch = responseText.match(/\{[\s\S]*\}/);

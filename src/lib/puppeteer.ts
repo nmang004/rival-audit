@@ -1,4 +1,4 @@
-import puppeteer, { Browser, Page } from 'puppeteer';
+import puppeteer, { Browser } from 'puppeteer';
 import { AxePuppeteer } from '@axe-core/puppeteer';
 import { CaptureResult, AccessibilityResult } from '@/types';
 
@@ -33,7 +33,7 @@ export async function captureWebsite(url: string): Promise<CaptureResult> {
     await page.goto(url, { waitUntil: 'networkidle0' });
 
     // Wait a bit for any animations/lazy loading
-    await page.waitForTimeout(1000);
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     const desktopScreenshot = await page.screenshot({
       fullPage: true,
@@ -43,7 +43,7 @@ export async function captureWebsite(url: string): Promise<CaptureResult> {
     // Mobile capture (375x812 - iPhone X)
     await page.setViewport({ width: 375, height: 812 });
     await page.goto(url, { waitUntil: 'networkidle0' });
-    await page.waitForTimeout(1000);
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     const mobileScreenshot = await page.screenshot({
       fullPage: true,

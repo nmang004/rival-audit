@@ -90,7 +90,7 @@ export async function executeAudit(
         metaTitle: result.metaTitle,
         metaDescription: result.metaDescription,
         h1Tags: result.h1Tags,
-        coreWebVitals: result.coreWebVitals as any,
+        coreWebVitals: result.coreWebVitals as { lcp: number; fid: number; cls: number },
         isHomepage: result.isHomepage,
         status: 'COMPLETED',
       },

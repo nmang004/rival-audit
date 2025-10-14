@@ -11,7 +11,7 @@ const createAuditSchema = z.object({
 });
 
 // GET /api/audits - List all audits for the current user
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const { userId } = await auth();
 
@@ -19,13 +19,21 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get user from database
-    const user = await prisma.user.findUnique({
+    // Get or create user from database
+    let user = await prisma.user.findUnique({
       where: { clerkId: userId },
     });
 
+    // Auto-create user if they don't exist (for development)
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      user = await prisma.user.create({
+        data: {
+          clerkId: userId,
+          email: 'user@example.com', // Will be updated by webhook later
+          name: 'User',
+          role: 'SALES',
+        },
+      });
     }
 
     // Get all audits for this user
@@ -62,13 +70,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get user from database
-    const user = await prisma.user.findUnique({
+    // Get or create user from database
+    let user = await prisma.user.findUnique({
       where: { clerkId: userId },
     });
 
+    // Auto-create user if they don't exist (for development)
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      user = await prisma.user.create({
+        data: {
+          clerkId: userId,
+          email: 'user@example.com', // Will be updated by webhook later
+          name: 'User',
+          role: 'SALES',
+        },
+      });
     }
 
     const body = await req.json();
@@ -76,7 +92,7 @@ export async function POST(req: NextRequest) {
 
     if (!validation.success) {
       return NextResponse.json(
-        { error: validation.error.errors[0].message },
+        { error: validation.error.issues[0].message },
         { status: 400 }
       );
     }

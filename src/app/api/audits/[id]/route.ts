@@ -15,12 +15,20 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({
+    let user = await prisma.user.findUnique({
       where: { clerkId: userId },
     });
 
+    // Auto-create user if they don't exist (for development)
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      user = await prisma.user.create({
+        data: {
+          clerkId: userId,
+          email: 'user@example.com',
+          name: 'User',
+          role: 'SALES',
+        },
+      });
     }
 
     const audit = await prisma.audit.findUnique({
@@ -74,12 +82,20 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({
+    let user = await prisma.user.findUnique({
       where: { clerkId: userId },
     });
 
+    // Auto-create user if they don't exist (for development)
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      user = await prisma.user.create({
+        data: {
+          clerkId: userId,
+          email: 'user@example.com',
+          name: 'User',
+          role: 'SALES',
+        },
+      });
     }
 
     const audit = await prisma.audit.findUnique({
@@ -124,12 +140,20 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await prisma.user.findUnique({
+    let user = await prisma.user.findUnique({
       where: { clerkId: userId },
     });
 
+    // Auto-create user if they don't exist (for development)
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      user = await prisma.user.create({
+        data: {
+          clerkId: userId,
+          email: 'user@example.com',
+          name: 'User',
+          role: 'SALES',
+        },
+      });
     }
 
     const audit = await prisma.audit.findUnique({
