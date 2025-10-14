@@ -1,0 +1,159 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model - synced with Clerk authentication
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  email     String   @unique
+  name      String
+  role      Role     @default(SALES)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  audits    Audit[]
+  reports   Report[]
+
+  @@index([clerkId])
+  @@index([email])
+}
+
+enum Role {
+  SALES
+  ADMIN
+  PROJECT_MANAGER
+}
+
+// Main Audit model - stores all audit data
+model Audit {
+  id                  String      @id @default(cuid())
+  url                 String
+  status              AuditStatus @default(PROPOSAL)
+
+  // Audit Results
+  seoScore            Int?
+  accessibilityScore  Int?
+  designScore         Int?
+  claudeAnalysis      String?     @db.Text
+  screenshotDesktop   String?
+  screenshotMobile    String?
+
+  // SEO Data
+  metaTitle           String?
+  metaDescription     String?     @db.Text
+  h1Tags              Json?
+  coreWebVitals       Json?
+
+  // Homepage-specific data (only for domain-level audits)
+  isHomepage          Boolean     @default(false)
+  totalKeywords       Int?
+  keywordTrendData    Json?
+  topPages            Json?
+
+  // SEMRush Data (populated when status = SIGNED)
+  semrushData         Json?
+  excelReportUrl      String?
+
+  // Sitemap Audit Data
+  isSitemapAudit      Boolean     @default(false)
+  sitemapUrls         Json?
+  contentGaps         Json?
+  urlStructureIssues  Json?
+
+  // Client Info
+  clientName          String?
+  clientEmail         String?
+
+  // Metadata
+  createdBy           User        @relation(fields: [createdById], references: [id])
+  createdById         String
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  // Relations
+  notes               Note[]
+  statusHistory       StatusChange[]
+  reportAudits        ReportAudit[]
+
+  @@index([status])
+  @@index([createdById])
+  @@index([createdAt])
+}
+
+enum AuditStatus {
+  PROPOSAL
+  INITIAL_CALL
+  SIGNED
+  IN_PROGRESS
+  COMPLETED
+}
+
+// Status change history - tracks status transitions
+model StatusChange {
+  id          String      @id @default(cuid())
+  audit       Audit       @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  auditId     String
+  fromStatus  AuditStatus
+  toStatus    AuditStatus
+  changedBy   String
+  changedAt   DateTime    @default(now())
+  notes       String?     @db.Text
+
+  @@index([auditId])
+  @@index([changedAt])
+}
+
+// Notes - internal notes on audits
+model Note {
+  id        String   @id @default(cuid())
+  audit     Audit    @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  auditId   String
+  content   String   @db.Text
+  createdBy String
+  createdAt DateTime @default(now())
+
+  @@index([auditId])
+  @@index([createdAt])
+}
+
+// Report - collection of multiple audits
+model Report {
+  id              String        @id @default(cuid())
+  name            String
+  description     String?       @db.Text
+  pdfUrl          String?
+  shareableLink   String?       @unique
+
+  createdBy       User          @relation(fields: [createdById], references: [id])
+  createdById     String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  reportAudits    ReportAudit[]
+
+  @@index([createdById])
+  @@index([shareableLink])
+}
+
+// ReportAudit - junction table for many-to-many with ordering
+model ReportAudit {
+  id        String   @id @default(cuid())
+  report    Report   @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  reportId  String
+  audit     Audit    @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  auditId   String
+  order     Int
+
+  @@unique([reportId, auditId])
+  @@index([reportId])
+  @@index([auditId])
+}
