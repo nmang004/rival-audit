@@ -112,10 +112,46 @@ export async function PATCH(
 
     const body = await req.json();
 
+    // Check if status is being updated
+    const isStatusChange = body.status && body.status !== audit.status;
+    const previousStatus = audit.status;
+    const newStatus = body.status;
+
     const updatedAudit = await prisma.audit.update({
       where: { id },
       data: body,
     });
+
+    // Log status change if status was updated
+    if (isStatusChange) {
+      await prisma.statusChange.create({
+        data: {
+          auditId: id,
+          fromStatus: previousStatus,
+          toStatus: newStatus,
+          changedBy: userId,
+        },
+      });
+
+      console.log(`[Audit ${id}] Status changed: ${previousStatus} → ${newStatus}`);
+
+      // Trigger signed workflow if status changed to SIGNED
+      if (newStatus === 'SIGNED' && previousStatus !== 'SIGNED') {
+        console.log(`[Audit ${id}] Triggering signed workflow...`);
+
+        // Import workflow dynamically to avoid circular dependencies
+        import('@/lib/workflows/signed-workflow')
+          .then(({ executeSignedWorkflow }) => {
+            return executeSignedWorkflow(id);
+          })
+          .then(() => {
+            console.log(`[Audit ${id}] Signed workflow completed successfully`);
+          })
+          .catch((error) => {
+            console.error(`[Audit ${id}] Signed workflow failed:`, error);
+          });
+      }
+    }
 
     return NextResponse.json({ success: true, data: updatedAudit });
   } catch (error) {

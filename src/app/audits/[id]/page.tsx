@@ -11,12 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { Loader2, ArrowLeft, ExternalLink, User, Mail, Calendar, CheckCircle2, XCircle, AlertCircle, Globe } from 'lucide-react';
+import { Loader2, ArrowLeft, ExternalLink, User, Mail, Calendar, CheckCircle2, XCircle, AlertCircle, Globe, FileSearch, Download, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { KeywordTrendChart } from '@/components/audit/keyword-trend-chart';
 import { TopPagesTable } from '@/components/audit/top-pages-table';
-import { KeywordTrendData, TopPage } from '@/types';
+import { ContentGapsDisplay } from '@/components/audit/content-gaps-display';
+import { UrlStructureIssuesDisplay } from '@/components/audit/url-structure-issues-display';
+import { KeywordTrendData, TopPage, ContentGap, UrlStructureIssue } from '@/types';
 
 interface ClaudeAnalysisData {
   analysis: string;
@@ -97,6 +99,172 @@ export default function AuditDetailPage({ params }: { params: Promise<{ id: stri
     );
   }
 
+  // SITEMAP AUDIT VIEW - Completely separate from regular audits
+  if (audit.isSitemapAudit) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto px-4 py-8 max-w-7xl">
+          {/* Back button */}
+          <Button asChild variant="ghost" className="mb-6">
+            <Link href="/dashboard">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Dashboard
+            </Link>
+          </Button>
+
+          {/* Header */}
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-2">
+              <FileSearch className="w-8 h-8 text-purple-600" />
+              <h1 className="text-3xl font-bold text-gray-900">Sitemap Audit</h1>
+            </div>
+            <p className="text-xl text-gray-600 break-all mb-4">{audit.url}</p>
+
+            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+              {audit.clientName && (
+                <div className="flex items-center gap-1">
+                  <User className="w-4 h-4" />
+                  {audit.clientName}
+                </div>
+              )}
+              {audit.clientEmail && (
+                <div className="flex items-center gap-1">
+                  <Mail className="w-4 h-4" />
+                  {audit.clientEmail}
+                </div>
+              )}
+              <div className="flex items-center gap-1">
+                <Calendar className="w-4 h-4" />
+                Created {format(new Date(audit.createdAt), 'PPp')}
+              </div>
+            </div>
+
+            <div className="mt-4 flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-700">Status:</span>
+                <Select
+                  value={audit.status}
+                  onValueChange={(value) => updateStatusMutation.mutate(value)}
+                  disabled={updateStatusMutation.isPending}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue>
+                      <StatusBadge status={audit.status} />
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PROPOSAL">Proposal</SelectItem>
+                    <SelectItem value="INITIAL_CALL">Initial Call</SelectItem>
+                    <SelectItem value="SIGNED">Signed</SelectItem>
+                    <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                    <SelectItem value="COMPLETED">Completed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Button asChild variant="outline" size="sm">
+                <a href={audit.url} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  View Sitemap
+                </a>
+              </Button>
+            </div>
+          </div>
+
+          {/* In Progress Message */}
+          {audit.status === 'IN_PROGRESS' && (
+            <Card className="mb-8 border-blue-200 bg-blue-50">
+              <CardContent className="py-4">
+                <div className="flex items-center gap-3">
+                  <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+                  <div>
+                    <p className="font-medium text-blue-900">Sitemap Audit in Progress</p>
+                    <p className="text-sm text-blue-700">
+                      Analyzing your sitemap structure and content. This page will auto-refresh.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Sitemap Overview */}
+          <Card className="mb-8">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <FileSearch className="w-5 h-5 text-purple-600" />
+                <CardTitle>Sitemap Overview</CardTitle>
+              </div>
+              <CardDescription>
+                Summary of your sitemap structure and analysis results
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-200">
+                  <p className="text-sm text-gray-600 mb-1">Total URLs</p>
+                  <p className="text-3xl font-bold text-purple-600">
+                    {audit.sitemapUrls ? (audit.sitemapUrls as { totalUrls: number }).totalUrls?.toLocaleString() || '0' : '0'}
+                  </p>
+                </div>
+                <div className="text-center p-4 bg-orange-50 rounded-lg border border-orange-200">
+                  <p className="text-sm text-gray-600 mb-1">Content Gaps</p>
+                  <p className="text-3xl font-bold text-orange-600">
+                    {audit.contentGaps ? (audit.contentGaps as unknown as ContentGap[]).length : '0'}
+                  </p>
+                </div>
+                <div className="text-center p-4 bg-red-50 rounded-lg border border-red-200">
+                  <p className="text-sm text-gray-600 mb-1">Structure Issues</p>
+                  <p className="text-3xl font-bold text-red-600">
+                    {audit.urlStructureIssues ? (audit.urlStructureIssues as unknown as UrlStructureIssue[]).length : '0'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Summary */}
+              {audit.claudeAnalysis && (
+                <div className="mt-6 p-4 bg-gray-50 rounded-lg border">
+                  <h4 className="font-semibold text-gray-900 mb-2">Analysis Summary</h4>
+                  <p className="text-gray-700 whitespace-pre-wrap">{audit.claudeAnalysis}</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Content Gaps */}
+          {audit.contentGaps && (audit.contentGaps as unknown as ContentGap[]).length > 0 && (
+            <ContentGapsDisplay gaps={audit.contentGaps as unknown as ContentGap[]} />
+          )}
+
+          {/* URL Structure Issues */}
+          {audit.urlStructureIssues && (audit.urlStructureIssues as unknown as UrlStructureIssue[]).length > 0 && (
+            <UrlStructureIssuesDisplay issues={audit.urlStructureIssues as unknown as UrlStructureIssue[]} />
+          )}
+
+          {/* No Results Message */}
+          {(!audit.contentGaps || (audit.contentGaps as unknown as ContentGap[]).length === 0) &&
+            (!audit.urlStructureIssues || (audit.urlStructureIssues as unknown as UrlStructureIssue[]).length === 0) &&
+            audit.status === 'COMPLETED' && (
+              <Card>
+                <CardContent className="py-12">
+                  <div className="text-center">
+                    <CheckCircle2 className="w-16 h-16 text-green-600 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                      Great! No major issues found
+                    </h3>
+                    <p className="text-gray-600">
+                      Your sitemap appears to be well-structured with no significant content gaps or URL issues.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+        </div>
+      </div>
+    );
+  }
+
+  // REGULAR URL AUDIT VIEW - Original audit display
   // Parse Claude analysis
   let claudeData: ClaudeAnalysisData | null = null;
   try {
@@ -317,6 +485,80 @@ export default function AuditDetailPage({ params }: { params: Promise<{ id: stri
                   </div>
                 </div>
               )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Signed Workflow Results - Show after status = SIGNED */}
+        {audit.status === 'SIGNED' && audit.excelReportUrl && (
+          <Card className="mb-8 border-green-200 bg-green-50">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5 text-green-600" />
+                <CardTitle className="text-green-900">Project Signed - Team Notified</CardTitle>
+              </div>
+              <CardDescription className="text-green-800">
+                SEMRush data retrieved and notifications sent to project team
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-2">Downloads</h4>
+                  <Button asChild variant="outline">
+                    <a href={audit.excelReportUrl} download>
+                      <Download className="w-4 h-4 mr-2" />
+                      Download SEMRush Excel Report
+                    </a>
+                  </Button>
+                </div>
+
+                {audit.semrushData && (
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">SEMRush Overview</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="bg-white p-3 rounded border">
+                        <p className="text-sm text-gray-600">Total Keywords</p>
+                        <p className="text-2xl font-bold text-gray-900">
+                          {(audit.semrushData as unknown as { totalKeywords?: number }).totalKeywords?.toLocaleString() || '0'}
+                        </p>
+                      </div>
+                      <div className="bg-white p-3 rounded border">
+                        <p className="text-sm text-gray-600">Organic Traffic</p>
+                        <p className="text-2xl font-bold text-gray-900">
+                          {(audit.semrushData as unknown as { organicTraffic?: number }).organicTraffic?.toLocaleString() || '0'}
+                        </p>
+                      </div>
+                      <div className="bg-white p-3 rounded border">
+                        <p className="text-sm text-gray-600">Top Keywords</p>
+                        <p className="text-2xl font-bold text-gray-900">
+                          {(audit.semrushData as unknown as { keywords?: unknown[] }).keywords?.length || '0'}
+                        </p>
+                      </div>
+                      <div className="bg-white p-3 rounded border">
+                        <p className="text-sm text-gray-600">Backlinks</p>
+                        <p className="text-2xl font-bold text-gray-900">
+                          {(audit.semrushData as unknown as { backlinks?: number }).backlinks?.toLocaleString() || '0'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="bg-white p-4 rounded border">
+                  <h4 className="font-semibold text-gray-900 mb-2">Notifications Sent</h4>
+                  <div className="flex gap-4">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <Mail className="w-4 h-4 text-green-600" />
+                      Email sent to PM and Web Team
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <MessageSquare className="w-4 h-4 text-green-600" />
+                      Slack notification posted
+                    </div>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         )}

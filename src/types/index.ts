@@ -111,12 +111,17 @@ export interface ClaudeAnalysisResult {
 }
 
 // Sitemap audit types
-export interface SitemapAuditResult {
+export interface SitemapUrl {
+  loc: string;
+  lastmod?: string;
+  changefreq?: string;
+  priority?: number;
+}
+
+export interface ParsedSitemap {
+  urls: SitemapUrl[];
   totalUrls: number;
-  crawledUrls: number;
   errors: string[];
-  contentGaps: ContentGap[];
-  urlStructureIssues: UrlStructureIssue[];
 }
 
 export interface ContentGap {
@@ -124,13 +129,44 @@ export interface ContentGap {
   description: string;
   priority: 'high' | 'medium' | 'low';
   suggestedPages: string[];
+  reasoning: string;
+}
+
+export interface ContentGapAnalysis {
+  gaps: ContentGap[];
+  summary: string;
+  totalGaps: number;
 }
 
 export interface UrlStructureIssue {
-  type: string;
+  type: 'inconsistent_pattern' | 'too_deep' | 'poor_naming' | 'missing_canonical' | 'duplicate_pattern';
   description: string;
   affectedUrls: string[];
   recommendation: string;
+  severity: 'high' | 'medium' | 'low';
+}
+
+export interface UrlStructureAnalysis {
+  issues: UrlStructureIssue[];
+  totalIssues: number;
+  patterns: {
+    pattern: string;
+    count: number;
+    example: string;
+  }[];
+  depthAnalysis: {
+    averageDepth: number;
+    maxDepth: number;
+    urlsByDepth: Record<number, number>;
+  };
+}
+
+export interface SitemapAuditResult {
+  totalUrls: number;
+  crawledUrls: number;
+  contentGaps: ContentGap[];
+  urlStructureIssues: UrlStructureIssue[];
+  summary: string;
 }
 
 // Export Prisma enums

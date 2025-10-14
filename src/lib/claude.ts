@@ -269,3 +269,167 @@ Respond in this JSON format:
     return { contentGaps: [], urlStructureIssues: [] };
   }
 }
+
+/**
+ * Generate strategic SEO recommendations for a signed client
+ * Combines previous audit analysis with SEMRush data for actionable roadmap
+ */
+export async function analyzeWithClaudeForStrategy(
+  audit: {
+    url: string;
+    seoScore: number | null;
+    accessibilityScore: number | null;
+    designScore: number | null;
+    claudeAnalysis: string | null;
+  },
+  semrushData: {
+    totalKeywords: number;
+    organicTraffic: number;
+    keywords: Array<{
+      keyword: string;
+      position: number;
+      volume: number;
+      difficulty: number;
+    }>;
+    topPages: Array<{
+      url: string;
+      traffic: number;
+      keywords: number;
+      position: number;
+    }>;
+  }
+): Promise<string> {
+  try {
+    // Get top keywords for analysis
+    const topKeywords = semrushData.keywords
+      .slice(0, 10)
+      .map(k => `${k.keyword} (Pos: ${k.position}, Vol: ${k.volume})`)
+      .join('\n');
+
+    // Get underperforming keywords (positions 11-20)
+    const underperformingKeywords = semrushData.keywords
+      .filter(k => k.position > 10 && k.position <= 20)
+      .slice(0, 5)
+      .map(k => `${k.keyword} (Pos: ${k.position}, Vol: ${k.volume})`)
+      .join('\n');
+
+    const message = await retryWithBackoff(() => anthropic.messages.create({
+      model: 'claude-sonnet-4-5-20250929',
+      max_tokens: 3072,
+      messages: [
+        {
+          role: 'user',
+          content: `You are an expert SEO strategist. A new client has just signed with us and you need to provide actionable strategic recommendations for their project kickoff.
+
+CLIENT INFORMATION:
+- Website: ${audit.url}
+- SEO Score: ${audit.seoScore || 'N/A'}/100
+- Accessibility Score: ${audit.accessibilityScore || 'N/A'}/100
+- Design Score: ${audit.designScore || 'N/A'}/10
+
+PREVIOUS AUDIT ANALYSIS:
+${audit.claudeAnalysis || 'No previous analysis available'}
+
+SEMRUSH DATA:
+- Total Keywords Ranking: ${semrushData.totalKeywords.toLocaleString()}
+- Estimated Monthly Traffic: ${semrushData.organicTraffic.toLocaleString()}
+
+TOP PERFORMING KEYWORDS:
+${topKeywords}
+
+UNDERPERFORMING KEYWORDS (11-20):
+${underperformingKeywords}
+
+TOP TRAFFIC PAGES:
+${semrushData.topPages.slice(0, 5).map(p => `${p.url} (Traffic: ${p.traffic}, Keywords: ${p.keywords})`).join('\n')}
+
+TASK:
+Create a comprehensive strategic SEO roadmap for this client. The project team (PM and Web developers) will use this to plan their work. Format your response as a detailed markdown document with the following sections:
+
+## 1. Executive Summary
+Brief overview of the client's current position and key opportunities (2-3 sentences)
+
+## 2. Quick Wins (0-30 days)
+- List 3-5 immediate actions that will show fast results
+- Focus on low-hanging fruit (technical fixes, easy optimizations)
+- Be specific with page URLs and exact changes
+
+## 3. Medium-Term Strategy (1-3 months)
+- Content strategy based on keyword opportunities
+- Technical SEO improvements needed
+- UX/UI enhancements that impact SEO
+- Specific recommendations for underperforming keywords
+
+## 4. Long-Term Growth (3-6 months)
+- Authority building opportunities
+- Content expansion areas based on gaps
+- Competitive positioning strategies
+- Link building recommendations
+
+## 5. Priority Action Items
+Create a numbered list of the top 5 most important tasks to start immediately:
+1. [Task] - Impact: [High/Medium/Low] | Effort: [High/Medium/Low] | Timeline: [X days/weeks]
+2. [Task] - Impact: [High/Medium/Low] | Effort: [High/Medium/Low] | Timeline: [X days/weeks]
+... (continue for 5 items)
+
+## 6. Keyword Optimization Opportunities
+### Underperforming Keywords to Optimize
+- List specific keywords in positions 11-20 that could easily move to page 1
+- Provide specific optimization tactics for each
+
+### New Keyword Targets
+- Based on gaps in current rankings
+- Include search volume and difficulty assessment
+
+## 7. Content Recommendations
+- Specific pages to create or optimize
+- Content topics based on keyword research
+- Internal linking opportunities
+
+## 8. Technical SEO Priorities
+- Critical issues to address based on audit scores
+- Performance optimization needs
+- Accessibility improvements
+
+Be specific, actionable, and data-driven. Focus on tangible outcomes the team can execute. Use markdown formatting with clear headers and bullet points.`,
+        },
+      ],
+    }));
+
+    const responseText = message.content[0].type === 'text' ? message.content[0].text : '';
+
+    console.log('[Claude] Generated strategic analysis for signed client:', audit.url);
+
+    return responseText;
+  } catch (error) {
+    console.error('Error generating strategic analysis with Claude:', error);
+    // Return a fallback analysis
+    return `# Strategic SEO Roadmap
+
+## Executive Summary
+Client website analysis complete. Focus areas: SEO optimization, technical improvements, and content strategy.
+
+## Quick Wins (0-30 days)
+- Optimize meta titles and descriptions
+- Fix critical accessibility issues
+- Improve page load performance
+- Optimize top-performing pages
+
+## Medium-Term Strategy (1-3 months)
+- Content expansion based on keyword opportunities
+- Technical SEO improvements
+- Internal linking optimization
+
+## Long-Term Growth (3-6 months)
+- Authority building through content marketing
+- Competitive positioning
+- Link building campaigns
+
+## Priority Action Items
+1. Technical SEO audit - Impact: High | Effort: Medium | Timeline: 1 week
+2. Content optimization - Impact: High | Effort: Medium | Timeline: 2 weeks
+3. Accessibility fixes - Impact: Medium | Effort: Low | Timeline: 1 week
+4. Performance optimization - Impact: High | Effort: Medium | Timeline: 2 weeks
+5. Keyword research expansion - Impact: Medium | Effort: Low | Timeline: 1 week`;
+  }
+}

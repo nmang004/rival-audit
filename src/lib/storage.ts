@@ -42,6 +42,30 @@ export async function uploadFile(
   return `/uploads/${uniqueFilename}`;
 }
 
+/**
+ * Upload Excel file to storage
+ * Returns public URL for download
+ */
+export async function uploadExcel(
+  buffer: Buffer,
+  filename: string,
+  auditId: string
+): Promise<string> {
+  await ensureUploadDir();
+
+  const sanitizedFilename = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const uniqueFilename = `${auditId}-${Date.now()}-${sanitizedFilename}`;
+  const filepath = path.join(UPLOAD_DIR, uniqueFilename);
+
+  await fs.writeFile(filepath, buffer);
+
+  console.log('[Storage] Excel file uploaded:', uniqueFilename);
+
+  // Return public URL
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  return `${appUrl}/uploads/${uniqueFilename}`;
+}
+
 // For production, you would use AWS S3:
 /*
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
