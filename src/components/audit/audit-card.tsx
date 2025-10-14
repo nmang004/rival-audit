@@ -3,10 +3,11 @@
 import { Audit } from '@prisma/client';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from './status-badge';
 import { ScoreDisplay } from './score-display';
 import { formatDistanceToNow } from 'date-fns';
-import { ExternalLink, Trash2, Eye } from 'lucide-react';
+import { ExternalLink, Trash2, Eye, Globe } from 'lucide-react';
 import Link from 'next/link';
 import {
   Dialog,
@@ -49,7 +50,15 @@ export function AuditCard({ audit, onDelete }: AuditCardProps) {
               </p>
             )}
           </div>
-          <StatusBadge status={audit.status} />
+          <div className="flex flex-col gap-2 items-end">
+            <StatusBadge status={audit.status} />
+            {audit.isHomepage && (
+              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-300">
+                <Globe className="w-3 h-3 mr-1" />
+                Homepage
+              </Badge>
+            )}
+          </div>
         </div>
       </CardHeader>
 

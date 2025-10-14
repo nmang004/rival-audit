@@ -3,6 +3,7 @@ import { analyzeWithClaude } from '../claude';
 import { uploadScreenshot } from '../storage';
 import { AuditExecutionResult } from '@/types';
 import prisma from '../prisma';
+import { Prisma } from '@prisma/client';
 
 export async function executeAudit(
   auditId: string,
@@ -47,14 +48,29 @@ export async function executeAudit(
 
     if (homepage) {
       console.log(`[Audit ${auditId}] Homepage detected, fetching SEMRush data...`);
-      // TODO: Implement SEMRush integration
-      // For now, set placeholder data
-      homepageData = {
-        isHomepage: true,
-        totalKeywords: 0,
-        keywordTrendData: [],
-        topPages: [],
-      };
+      try {
+        const { getHomepageData } = await import('../semrush');
+        const domain = new URL(url).hostname;
+        const semrushData = await getHomepageData(domain);
+
+        homepageData = {
+          isHomepage: true,
+          totalKeywords: semrushData.totalKeywords,
+          keywordTrendData: semrushData.keywordTrendData,
+          topPages: semrushData.topPages,
+        };
+
+        console.log(`[Audit ${auditId}] SEMRush data fetched successfully`);
+      } catch (error) {
+        console.error(`[Audit ${auditId}] SEMRush data fetch failed:`, error);
+        // Continue with audit even if SEMRush fails
+        homepageData = {
+          isHomepage: true,
+          totalKeywords: 0,
+          keywordTrendData: [],
+          topPages: [],
+        };
+      }
     }
 
     const result: AuditExecutionResult = {
@@ -92,6 +108,9 @@ export async function executeAudit(
         h1Tags: result.h1Tags,
         coreWebVitals: result.coreWebVitals as { lcp: number; fid: number; cls: number },
         isHomepage: result.isHomepage,
+        totalKeywords: result.totalKeywords,
+        keywordTrendData: result.keywordTrendData ? (result.keywordTrendData as unknown as Prisma.InputJsonValue) : undefined,
+        topPages: result.topPages ? (result.topPages as unknown as Prisma.InputJsonValue) : undefined,
         status: 'COMPLETED',
       },
     });

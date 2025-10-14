@@ -11,9 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { Loader2, ArrowLeft, ExternalLink, User, Mail, Calendar, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { Loader2, ArrowLeft, ExternalLink, User, Mail, Calendar, CheckCircle2, XCircle, AlertCircle, Globe } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { KeywordTrendChart } from '@/components/audit/keyword-trend-chart';
+import { TopPagesTable } from '@/components/audit/top-pages-table';
+import { KeywordTrendData, TopPage } from '@/types';
 
 interface ClaudeAnalysisData {
   analysis: string;
@@ -318,6 +321,78 @@ export default function AuditDetailPage({ params }: { params: Promise<{ id: stri
           </Card>
         )}
 
+        {/* Homepage SEMRush Data - Only show if isHomepage === true */}
+        {audit.isHomepage && (
+          <>
+            <Card className="mb-8">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Globe className="w-5 h-5 text-blue-600" />
+                  <CardTitle>Homepage Detected</CardTitle>
+                </div>
+                <CardDescription>
+                  This is a domain homepage. SEMRush keyword data is included below.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <p className="text-sm text-gray-600 mb-1">Total Keywords</p>
+                    <p className="text-3xl font-bold text-blue-600">
+                      {audit.totalKeywords?.toLocaleString() || '0'}
+                    </p>
+                  </div>
+                  <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
+                    <p className="text-sm text-gray-600 mb-1">Trend Data Points</p>
+                    <p className="text-3xl font-bold text-green-600">
+                      {audit.keywordTrendData ? Array.isArray(audit.keywordTrendData) ? audit.keywordTrendData.length : '0' : '0'}
+                    </p>
+                  </div>
+                  <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-200">
+                    <p className="text-sm text-gray-600 mb-1">Top Pages</p>
+                    <p className="text-3xl font-bold text-purple-600">
+                      {audit.topPages ? Array.isArray(audit.topPages) ? audit.topPages.length : '0' : '0'}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Keyword Trend Chart */}
+            {audit.keywordTrendData && Array.isArray(audit.keywordTrendData) && audit.keywordTrendData.length > 0 && (
+              <Card className="mb-8">
+                <CardHeader>
+                  <CardTitle>Keyword Trend (12 Months)</CardTitle>
+                  <CardDescription>
+                    Organic keyword ranking history over the past year
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <KeywordTrendChart data={audit.keywordTrendData as unknown as KeywordTrendData[]} />
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Top Pages Table */}
+            {audit.topPages && Array.isArray(audit.topPages) && audit.topPages.length > 0 && (
+              <Card className="mb-8">
+                <CardHeader>
+                  <CardTitle>Top Performing Pages</CardTitle>
+                  <CardDescription>
+                    Pages with highest organic traffic and keyword rankings
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <TopPagesTable
+                    pages={audit.topPages as unknown as TopPage[]}
+                    domain={new URL(audit.url).hostname}
+                  />
+                </CardContent>
+              </Card>
+            )}
+          </>
+        )}
+
         {/* Technical Details */}
         <Card>
           <CardHeader>
@@ -357,14 +432,6 @@ export default function AuditDetailPage({ params }: { params: Promise<{ id: stri
                         </p>
                       ))}
                     </div>
-                  </div>
-                )}
-
-                {audit.isHomepage && (
-                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-blue-900 font-medium">
-                      Homepage detected - Additional SEMRush data available when status is set to SIGNED
-                    </p>
                   </div>
                 )}
               </TabsContent>

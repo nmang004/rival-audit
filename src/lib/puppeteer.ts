@@ -25,15 +25,28 @@ export async function captureWebsite(url: string): Promise<CaptureResult> {
   const page = await browser.newPage();
 
   try {
-    // Set a reasonable timeout
-    await page.setDefaultNavigationTimeout(30000);
+    // Set a longer timeout for slow websites
+    await page.setDefaultNavigationTimeout(60000);
 
     // Desktop capture (1920x1080)
     await page.setViewport({ width: 1920, height: 1080 });
-    await page.goto(url, { waitUntil: 'networkidle0' });
+
+    // Try with networkidle2 first (more lenient), fallback to domcontentloaded
+    try {
+      await page.goto(url, {
+        waitUntil: 'networkidle2',
+        timeout: 60000
+      });
+    } catch (navError) {
+      console.log('[Puppeteer] networkidle2 failed, trying domcontentloaded...');
+      await page.goto(url, {
+        waitUntil: 'domcontentloaded',
+        timeout: 60000
+      });
+    }
 
     // Wait a bit for any animations/lazy loading
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     const desktopScreenshot = await page.screenshot({
       fullPage: true,
@@ -42,8 +55,22 @@ export async function captureWebsite(url: string): Promise<CaptureResult> {
 
     // Mobile capture (375x812 - iPhone X)
     await page.setViewport({ width: 375, height: 812 });
-    await page.goto(url, { waitUntil: 'networkidle0' });
-    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Try with networkidle2 first, fallback to domcontentloaded
+    try {
+      await page.goto(url, {
+        waitUntil: 'networkidle2',
+        timeout: 60000
+      });
+    } catch (navError) {
+      console.log('[Puppeteer] networkidle2 failed, trying domcontentloaded...');
+      await page.goto(url, {
+        waitUntil: 'domcontentloaded',
+        timeout: 60000
+      });
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     const mobileScreenshot = await page.screenshot({
       fullPage: true,
@@ -60,7 +87,8 @@ export async function captureWebsite(url: string): Promise<CaptureResult> {
     };
   } catch (error) {
     await page.close();
-    throw new Error(`Failed to capture website: ${error}`);
+    console.error('[Puppeteer] Error capturing website:', error);
+    throw new Error(`Failed to capture website: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
@@ -70,7 +98,20 @@ export async function runAccessibilityTests(url: string): Promise<AccessibilityR
 
   try {
     await page.setViewport({ width: 1920, height: 1080 });
-    await page.goto(url, { waitUntil: 'networkidle0' });
+
+    // Try with networkidle2 first, fallback to domcontentloaded
+    try {
+      await page.goto(url, {
+        waitUntil: 'networkidle2',
+        timeout: 60000
+      });
+    } catch (navError) {
+      console.log('[Puppeteer] networkidle2 failed for accessibility, trying domcontentloaded...');
+      await page.goto(url, {
+        waitUntil: 'domcontentloaded',
+        timeout: 60000
+      });
+    }
 
     // Run axe-core accessibility tests
     const results = await new AxePuppeteer(page).analyze();
@@ -129,7 +170,20 @@ export async function extractSEOData(url: string): Promise<{
 
   try {
     await page.setViewport({ width: 1920, height: 1080 });
-    await page.goto(url, { waitUntil: 'networkidle0' });
+
+    // Try with networkidle2 first, fallback to domcontentloaded
+    try {
+      await page.goto(url, {
+        waitUntil: 'networkidle2',
+        timeout: 60000
+      });
+    } catch (navError) {
+      console.log('[Puppeteer] networkidle2 failed for SEO, trying domcontentloaded...');
+      await page.goto(url, {
+        waitUntil: 'domcontentloaded',
+        timeout: 60000
+      });
+    }
 
     // Extract SEO metadata
     const seoData = await page.evaluate(() => {
