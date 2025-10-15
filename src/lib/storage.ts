@@ -66,6 +66,30 @@ export async function uploadExcel(
   return `${appUrl}/uploads/${uniqueFilename}`;
 }
 
+/**
+ * Upload PDF report to storage
+ * Returns public URL for download
+ */
+export async function uploadPDF(
+  buffer: Buffer,
+  filename: string,
+  reportId: string
+): Promise<string> {
+  await ensureUploadDir();
+
+  const sanitizedFilename = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const uniqueFilename = `${reportId}-${Date.now()}-${sanitizedFilename}`;
+  const filepath = path.join(UPLOAD_DIR, uniqueFilename);
+
+  await fs.writeFile(filepath, buffer);
+
+  console.log('[Storage] PDF file uploaded:', uniqueFilename);
+
+  // Return public URL
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+  return `${appUrl}/uploads/${uniqueFilename}`;
+}
+
 // For production, you would use AWS S3:
 /*
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';

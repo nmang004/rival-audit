@@ -16,6 +16,48 @@ export type ReportWithAudits = Report & {
   }[];
 };
 
+// Audit with scores for PDF generation
+export interface AuditWithScores {
+  id: string;
+  url: string;
+  clientName: string | null;
+  seoScore: number | null;
+  accessibilityScore: number | null;
+  designScore: number | null;
+  claudeAnalysis: string | null;
+  screenshotDesktop: string | null;
+  screenshotMobile: string | null;
+  isHomepage: boolean;
+  totalKeywords: number | null;
+  createdAt: Date;
+  keywordTrendData?: KeywordTrendData[] | null;
+  topPages?: TopPage[] | null;
+}
+
+// PDF generation result
+export interface PDFGenerationResult {
+  pdfUrl: string;
+  generatedAt: Date;
+  fileSize: number;
+}
+
+// Shareable link information
+export interface ShareableLinkInfo {
+  shareableLink: string;
+  publicUrl: string;
+  createdAt: Date;
+}
+
+// PDF generation options
+export interface PDFGenerationOptions {
+  reportId: string;
+  reportName: string;
+  reportDescription?: string;
+  audits: AuditWithScores[];
+  generatedBy: string;
+  generatedDate: Date;
+}
+
 // API Response types
 export interface ApiResponse<T = unknown> {
   success: boolean;
