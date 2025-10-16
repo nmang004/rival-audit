@@ -1,0 +1,26 @@
+I need you to build a comprehensive Settings page for my Sales SEO Audit Tool.
+
+Please read the full specification in docs/SETTINGS-PAGE-PROMPT.md and use docs/SETTINGS-PAGE-CHECKLIST.md to track your progress.
+
+Start by:
+1. Reading both documentation files to understand the full scope
+2. Creating a todo list to track all phases of development
+3. Beginning with Phase 1: Database schema updates
+
+Key requirements:
+- Fully functional settings with database persistence
+- Secure API key management (encrypted storage, masked display, test connections)
+- Email notification preferences
+- Report branding customization with live preview
+- UI preferences (theme, view mode, items per page)
+- Professional design matching our Rival Digital brand (navy & orange)
+- Mobile responsive
+- Accessible (WCAG 2.1 AA)
+
+The implementation should follow our existing patterns:
+- Use React Query for data fetching
+- Follow the card styling from audit-card.tsx
+- Use our design system in globals.css
+- Follow API route patterns from /api/audits
+
+Please work through the checklist systematically, marking items complete as you go. Let me know if you have any questions before starting!

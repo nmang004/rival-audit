@@ -102,32 +102,228 @@ function getReportStyles(): string {
       height: 100vh;
       display: flex;
       flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      justify-content: space-between;
+      background: linear-gradient(135deg, #002264 0%, #003387 50%, #002264 100%);
       color: white;
       page-break-after: always;
-      padding: 40px;
+      padding: 60px;
       text-align: center;
     }
 
-    .cover-title {
+    .cover-brand {
+      margin-bottom: 40px;
+    }
+
+    .brand-logo {
       font-size: 48px;
+      font-weight: 900;
+      letter-spacing: 3px;
+      color: #f78d30;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+    }
+
+    .brand-tagline {
+      font-size: 18px;
+      opacity: 0.95;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      font-weight: 300;
+    }
+
+    .cover-title {
+      font-size: 64px;
       font-weight: bold;
-      margin-bottom: 20px;
+      margin: 60px 0 30px;
+      line-height: 1.2;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     }
 
     .cover-description {
-      font-size: 18px;
-      margin-bottom: 40px;
-      max-width: 600px;
-      opacity: 0.9;
+      font-size: 22px;
+      margin: 0 auto 80px;
+      max-width: 800px;
+      opacity: 0.95;
+      line-height: 1.7;
+    }
+
+    .cover-stats {
+      margin: 80px 0;
+    }
+
+    .stat-large {
+      display: inline-block;
+      padding: 40px 80px;
+      background: rgba(247, 141, 48, 0.15);
+      border: 4px solid #f78d30;
+      border-radius: 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    }
+
+    .stat-number {
+      font-size: 96px;
+      font-weight: bold;
+      color: #f78d30;
+      line-height: 1;
+      text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .stat-label {
+      font-size: 24px;
+      margin-top: 15px;
+      opacity: 0.95;
+      font-weight: 300;
     }
 
     .cover-meta {
+      font-size: 18px;
+      opacity: 0.85;
+      line-height: 2;
+      font-weight: 300;
+    }
+
+    .cover-footer {
+      font-size: 16px;
+      opacity: 0.75;
+      border-top: 1px solid rgba(255, 255, 255, 0.25);
+      padding-top: 30px;
+      line-height: 2;
+    }
+
+    .cover-footer-brand {
+      font-weight: 600;
+      color: #f78d30;
+      margin-bottom: 8px;
+    }
+
+    .overview-box {
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+      border: 3px solid #002264;
+      border-radius: 16px;
+      padding: 40px;
+      margin: 40px 0;
+      box-shadow: 0 4px 12px rgba(0, 34, 100, 0.1);
+    }
+
+    .overview-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 30px;
+      margin-top: 30px;
+    }
+
+    .overview-item {
+      text-align: center;
+      padding: 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .overview-label {
       font-size: 14px;
-      opacity: 0.8;
-      margin-top: 60px;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+
+    .overview-value {
+      font-size: 42px;
+      font-weight: bold;
+      color: #002264;
+      line-height: 1;
+    }
+
+    .summary-table {
+      margin: 40px 0;
+      border-collapse: separate;
+      border-spacing: 0;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .summary-table thead th {
+      background: #002264;
+      color: white;
+      font-weight: bold;
+      padding: 18px;
+      text-align: left;
+      font-size: 14px;
+      letter-spacing: 0.5px;
+    }
+
+    .summary-table tbody tr {
+      background: white;
+    }
+
+    .summary-table tbody tr:nth-child(even) {
+      background: #f9fafb;
+    }
+
+    .summary-table tbody td {
+      padding: 16px 18px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .score-badge {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .score-badge.excellent {
+      background: #10b981;
+      color: white;
+    }
+
+    .score-badge.good {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .score-badge.medium {
+      background: #f59e0b;
+      color: white;
+    }
+
+    .score-badge.poor {
+      background: #ef4444;
+      color: white;
+    }
+
+    .recommendations-section {
+      margin: 40px 0;
+    }
+
+    .recommendation-priority {
+      background: linear-gradient(to right, #fff7ed, #ffffff);
+      border-left: 6px solid #f78d30;
+      padding: 25px 30px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(247, 141, 48, 0.1);
+    }
+
+    .recommendation-priority h4 {
+      color: #002264;
+      margin: 0 0 12px 0;
+      font-size: 20px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .recommendation-priority p {
+      color: #4b5563;
+      margin: 0;
+      line-height: 1.7;
+      font-size: 15px;
     }
 
     .section {
@@ -259,14 +455,38 @@ function getReportStyles(): string {
 function generateCoverPage(options: PDFGenerationOptions): string {
   return `
     <div class="cover-page">
-      <div class="cover-title">${escapeHtml(options.reportName)}</div>
-      ${options.reportDescription ? `<div class="cover-description">${escapeHtml(options.reportDescription)}</div>` : ''}
-      <div style="font-size: 24px; margin-top: 40px;">
-        ${options.audits.length} ${options.audits.length === 1 ? 'Website' : 'Websites'} Analyzed
+      <!-- Rival Digital Branding -->
+      <div class="cover-brand">
+        <div class="brand-logo">RIVAL DIGITAL</div>
+        <div class="brand-tagline">Sales SEO Audit Report</div>
       </div>
+
+      <!-- Report Title -->
+      <div class="cover-title">${escapeHtml(options.reportName)}</div>
+
+      <!-- Description -->
+      ${options.reportDescription ? `
+        <div class="cover-description">${escapeHtml(options.reportDescription)}</div>
+      ` : ''}
+
+      <!-- Audit Count -->
+      <div class="cover-stats">
+        <div class="stat-large">
+          <div class="stat-number">${options.audits.length}</div>
+          <div class="stat-label">${options.audits.length === 1 ? 'Website' : 'Websites'} Analyzed</div>
+        </div>
+      </div>
+
+      <!-- Generation Info -->
       <div class="cover-meta">
-        Generated on ${formatDate(options.generatedDate)}<br/>
-        Prepared by ${escapeHtml(options.generatedBy)}
+        <div><strong>Generated:</strong> ${formatDate(options.generatedDate)}</div>
+        <div><strong>Prepared by:</strong> ${escapeHtml(options.generatedBy)}</div>
+      </div>
+
+      <!-- Footer -->
+      <div class="cover-footer">
+        <div class="cover-footer-brand">Rival Digital</div>
+        <div>www.rivaldigital.com | Professional SEO Audit Services</div>
       </div>
     </div>
   `;
@@ -285,48 +505,78 @@ function generateExecutiveSummary(options: PDFGenerationOptions): string {
     <div class="section">
       <h1>Executive Summary</h1>
 
-      <p>
-        This report analyzes ${options.audits.length} website${options.audits.length === 1 ? '' : 's'}
-        for SEO performance, accessibility compliance, and design quality.
-      </p>
+      <!-- Overview Box -->
+      <div class="overview-box">
+        <h2 style="margin-top: 0;">Report Overview</h2>
+        <div class="overview-grid">
+          <div class="overview-item">
+            <div class="overview-label">Websites Analyzed</div>
+            <div class="overview-value">${options.audits.length}</div>
+          </div>
+          <div class="overview-item">
+            <div class="overview-label">Analysis Date</div>
+            <div class="overview-value" style="font-size: 20px; font-weight: 600; color: #f78d30;">
+              ${formatDate(options.generatedDate)}
+            </div>
+          </div>
+          <div class="overview-item">
+            <div class="overview-label">Total Keywords</div>
+            <div class="overview-value">${totalKeywords.toLocaleString()}</div>
+          </div>
+        </div>
+      </div>
 
+      <!-- Performance Summary Table -->
+      <h2>Performance Summary</h2>
+      <table class="summary-table">
+        <thead>
+          <tr>
+            <th>Website</th>
+            <th>SEO Score</th>
+            <th>Accessibility</th>
+            <th>Design</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${options.audits.map(audit => `
+            <tr>
+              <td class="url-text" style="font-weight: 600;">${truncateUrl(audit.url, 45)}</td>
+              <td><span class="score-badge ${getScoreBadgeClass(audit.seoScore)}">${audit.seoScore || 'N/A'}</span></td>
+              <td><span class="score-badge ${getScoreBadgeClass(audit.accessibilityScore)}">${audit.accessibilityScore || 'N/A'}</span></td>
+              <td><span class="score-badge ${getScoreBadgeClass(audit.designScore ? audit.designScore * 10 : null)}">${audit.designScore || 'N/A'}</span></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+
+      <!-- Recommendations -->
+      <h2>Priority Recommendations</h2>
+      <div class="recommendations-section">
+        ${generateTopRecommendations(options.audits, avgSEO, avgA11y, avgDesign)}
+      </div>
+
+      <!-- Overall Performance Scores -->
       <h2>Overall Performance</h2>
-
       <div class="scores-container">
         <div>
           <div class="score-circle ${getScoreClass(avgSEO)}">
             ${avgSEO}
           </div>
-          <div style="text-align: center; margin-top: 10px; font-weight: bold;">SEO Score</div>
+          <div style="text-align: center; margin-top: 15px; font-weight: bold; font-size: 16px;">SEO Score</div>
         </div>
         <div>
           <div class="score-circle ${getScoreClass(avgA11y)}">
             ${avgA11y}
           </div>
-          <div style="text-align: center; margin-top: 10px; font-weight: bold;">Accessibility</div>
+          <div style="text-align: center; margin-top: 15px; font-weight: bold; font-size: 16px;">Accessibility</div>
         </div>
         <div>
           <div class="score-circle ${getScoreClass(avgDesign)}">
             ${avgDesign}
           </div>
-          <div style="text-align: center; margin-top: 10px; font-weight: bold;">Design</div>
+          <div style="text-align: center; margin-top: 15px; font-weight: bold; font-size: 16px;">Design</div>
         </div>
       </div>
-
-      ${totalKeywords > 0 ? `
-        <div class="metric-card">
-          <div class="metric-label">Total Keywords Tracked</div>
-          <div class="metric-value">${totalKeywords.toLocaleString()}</div>
-        </div>
-      ` : ''}
-
-      <h2>Key Findings</h2>
-      <ul>
-        <li>Average SEO score of ${avgSEO}/100 across all analyzed websites</li>
-        <li>Average accessibility score of ${avgA11y}/100, indicating ${avgA11y >= 80 ? 'good' : avgA11y >= 60 ? 'moderate' : 'poor'} compliance</li>
-        <li>Average design score of ${avgDesign}/10, reflecting ${avgDesign >= 8 ? 'excellent' : avgDesign >= 6 ? 'good' : 'needs improvement'} modern design practices</li>
-        ${totalKeywords > 0 ? `<li>Tracking ${totalKeywords.toLocaleString()} total keywords across homepage${options.audits.filter(a => a.isHomepage).length > 1 ? 's' : ''}</li>` : ''}
-      </ul>
     </div>
   `;
 }
@@ -470,4 +720,119 @@ function escapeHtml(text: string): string {
     "'": '&#039;',
   };
   return text.replace(/[&<>"']/g, m => map[m]);
+}
+
+/**
+ * Truncate URL for display
+ */
+function truncateUrl(url: string, maxLength: number = 50): string {
+  if (url.length <= maxLength) return url;
+
+  try {
+    const urlObj = new URL(url);
+    const domain = urlObj.hostname.replace('www.', '');
+    const path = urlObj.pathname + urlObj.search;
+
+    if (domain.length + path.length > maxLength) {
+      const availableLength = maxLength - domain.length - 3;
+      if (availableLength > 10) {
+        return domain + path.substring(0, availableLength) + '...';
+      }
+      return domain + '...';
+    }
+
+    return domain + path;
+  } catch {
+    return url.substring(0, maxLength) + '...';
+  }
+}
+
+/**
+ * Get score badge class based on value
+ */
+function getScoreBadgeClass(score: number | null): string {
+  if (score === null) return 'poor';
+  if (score >= 90) return 'excellent';
+  if (score >= 70) return 'good';
+  if (score >= 50) return 'medium';
+  return 'poor';
+}
+
+/**
+ * Generate top recommendations based on scores
+ */
+function generateTopRecommendations(
+  audits: AuditWithScores[],
+  avgSEO: number,
+  avgA11y: number,
+  avgDesign: number
+): string {
+  const recommendations: string[] = [];
+
+  // SEO Recommendation
+  if (avgSEO < 70) {
+    recommendations.push(`
+      <div class="recommendation-priority">
+        <h4>🎯 Improve SEO Performance</h4>
+        <p>Average SEO score of ${avgSEO}/100 indicates significant optimization opportunities. Focus on meta tags, heading structure, keyword optimization, and content quality to improve search engine rankings.</p>
+      </div>
+    `);
+  } else if (avgSEO < 85) {
+    recommendations.push(`
+      <div class="recommendation-priority">
+        <h4>🎯 Optimize SEO Further</h4>
+        <p>With an average SEO score of ${avgSEO}/100, you're performing well but there's room for improvement. Fine-tune technical SEO elements and enhance content strategy.</p>
+      </div>
+    `);
+  }
+
+  // Accessibility Recommendation
+  if (avgA11y < 80) {
+    recommendations.push(`
+      <div class="recommendation-priority">
+        <h4>♿ Enhance Accessibility</h4>
+        <p>Average accessibility score of ${avgA11y}/100 requires attention. Prioritize WCAG 2.1 Level AA compliance for better user experience, legal compliance, and broader audience reach.</p>
+      </div>
+    `);
+  }
+
+  // Design Recommendation
+  if (avgDesign < 7) {
+    recommendations.push(`
+      <div class="recommendation-priority">
+        <h4>🎨 Modernize Design</h4>
+        <p>Average design score of ${avgDesign}/10 suggests design improvements are needed. Consider updating UI/UX elements, improving visual hierarchy, and ensuring mobile responsiveness.</p>
+      </div>
+    `);
+  }
+
+  // Keywords Recommendation
+  const homepages = audits.filter(a => a.isHomepage);
+  const withKeywords = homepages.filter(a => a.totalKeywords && a.totalKeywords > 0);
+
+  if (homepages.length > 0 && withKeywords.length < homepages.length) {
+    const missing = homepages.length - withKeywords.length;
+    recommendations.push(`
+      <div class="recommendation-priority">
+        <h4>🔑 Expand Keyword Strategy</h4>
+        <p>${missing} homepage${missing > 1 ? 's' : ''} missing comprehensive keyword data. Conduct thorough keyword research to identify high-value search terms and optimize content accordingly.</p>
+      </div>
+    `);
+  }
+
+  // Low-performing sites
+  const poorSEO = audits.filter(a => a.seoScore && a.seoScore < 60);
+  if (poorSEO.length > 0) {
+    const urls = poorSEO.map(a => truncateUrl(a.url, 30)).join(', ');
+    recommendations.push(`
+      <div class="recommendation-priority">
+        <h4>⚠️ Address Critical SEO Issues</h4>
+        <p>${poorSEO.length} site${poorSEO.length > 1 ? 's' : ''} (${urls}) scoring below 60/100 require immediate attention. These sites may be losing significant organic traffic.</p>
+      </div>
+    `);
+  }
+
+  return recommendations.length > 0
+    ? recommendations.join('')
+    : '<div class="recommendation-priority"><h4>✅ Excellent Overall Performance</h4><p>No critical recommendations at this time. Continue monitoring performance and implementing incremental improvements.</p></div>';
 }

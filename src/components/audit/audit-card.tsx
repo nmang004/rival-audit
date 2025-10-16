@@ -34,8 +34,8 @@ export function AuditCard({ audit, onDelete }: AuditCardProps) {
   };
 
   return (
-    <Card className="overflow-hidden card-hover-effect subtle-border">
-      <CardHeader className="pb-3 sage-bg-subtle">
+    <Card className="overflow-hidden card-hover-effect border-[oklch(0.24_0.13_265)]/10 bg-gradient-to-br from-white to-[oklch(0.24_0.13_265)]/[0.02]">
+      <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <Link
@@ -50,10 +50,10 @@ export function AuditCard({ audit, onDelete }: AuditCardProps) {
               </p>
             )}
           </div>
-          <div className="flex flex-col gap-2 items-end">
+          <div className="flex flex-col gap-2 items-end shrink-0">
             <StatusBadge status={audit.status} />
             {audit.isHomepage && (
-              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-300 animate-badge-pop">
+              <Badge variant="outline" className="text-xs bg-[oklch(0.24_0.13_265)]/5 text-[oklch(0.24_0.13_265)] border-[oklch(0.24_0.13_265)]/20 animate-badge-pop font-medium">
                 <Globe className="w-3 h-3 mr-1" />
                 Homepage
               </Badge>
@@ -78,8 +78,8 @@ export function AuditCard({ audit, onDelete }: AuditCardProps) {
         </div>
       </CardContent>
 
-      <CardFooter className="flex gap-2 pt-3 bg-muted/30">
-        <Button asChild variant="default" size="sm" className="flex-1 button-scale">
+      <CardFooter className="flex gap-2 pt-3 border-t">
+        <Button asChild variant="default" size="sm" className="flex-1 button-scale rival-button">
           <Link href={`/audits/${audit.id}`}>
             <Eye className="w-4 h-4 mr-1" />
             View

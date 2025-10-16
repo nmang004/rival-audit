@@ -215,8 +215,9 @@
 }
 
 .card-hover-effect:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 24px oklch(0.24 0.13 265 / 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px oklch(0.24 0.13 265 / 0.08);
+  border-color: oklch(0.24 0.13 265 / 0.2);
 }
 
 .card-hover {
@@ -392,6 +393,24 @@
   }
 }
 
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes button-spinner {
+  from {
+    transform: rotate(0turn);
+  }
+  to {
+    transform: rotate(1turn);
+  }
+}
+
 .animate-fadeIn {
   animation: fadeIn 0.5s ease-in-out;
 }
@@ -480,4 +499,41 @@
   .high-res-grid {
     grid-template-columns: repeat(5, 1fr);
   }
+}
+
+/* Button Loading States */
+.button-loading {
+  position: relative;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.button-loading::after {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin: auto;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: button-spinner 0.6s linear infinite;
+}
+
+/* Input Focus Glow */
+.input-glow:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px oklch(0.24 0.13 265 / 0.1);
+  border-color: oklch(0.24 0.13 265);
+  transition: all 0.2s ease;
+}
+
+.input-glow:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px oklch(0.24 0.13 265 / 0.1);
+  border-color: oklch(0.24 0.13 265);
 }

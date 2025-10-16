@@ -15,11 +15,11 @@ export function ReportCard({ report, onDelete }: ReportCardProps) {
   const auditCount = report.reportAudits.length;
 
   return (
-    <Card className="card-hover-effect gradient-border">
-      <CardHeader className="sage-bg-subtle">
+    <Card className="card-hover-effect border-[oklch(0.24_0.13_265)]/10 bg-gradient-to-br from-white to-[oklch(0.24_0.13_265)]/[0.02]">
+      <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <CardTitle className="text-2xl gradient-text mb-2">{report.name}</CardTitle>
+            <CardTitle className="text-2xl text-primary mb-2">{report.name}</CardTitle>
             {report.description && (
               <CardDescription className="line-clamp-2 text-base">
                 {report.description}
@@ -79,7 +79,7 @@ export function ReportCard({ report, onDelete }: ReportCardProps) {
             </a>
           )}
           <Link href={`/reports/${report.id}`} className="flex-1">
-            <Button variant="default" size="sm" className="w-full button-scale">
+            <Button variant="default" size="sm" className="w-full button-scale rival-button">
               View Details
             </Button>
           </Link>

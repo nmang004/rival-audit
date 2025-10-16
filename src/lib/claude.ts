@@ -6,30 +6,121 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
 });
 
-// Resize image to ensure no dimension exceeds Claude's 8000px limit
+// Safety check and final compression for Claude API
+// Ensures: dimensions < 8000px, size < 4.5MB, format = JPEG
 async function resizeImageForClaude(imageBuffer: Buffer): Promise<Buffer> {
-  const MAX_DIMENSION = 7500; // Leave buffer below 8000px limit
+  const MAX_FILE_SIZE = 4.5 * 1024 * 1024; // 4.5MB to leave buffer below 5MB
+  const MAX_DIMENSION = 7500; // Claude's limit is 8000px, leave buffer
+
+  const originalSize = imageBuffer.length;
+  console.log(`[Claude] Checking image: ${(originalSize / 1024 / 1024).toFixed(2)}MB`);
 
   const image = sharp(imageBuffer);
   const metadata = await image.metadata();
 
   if (!metadata.width || !metadata.height) {
-    return imageBuffer;
+    console.log('[Claude] Unable to read image metadata, applying default compression');
+    const fallback = await sharp(imageBuffer)
+      .resize(7500, 7500, { fit: 'inside' })
+      .jpeg({ quality: 80, progressive: true })
+      .toBuffer();
+    console.log(`[Claude] Fallback: ${(fallback.length / 1024 / 1024).toFixed(2)}MB`);
+    return fallback;
   }
 
-  // Check if resizing is needed
-  if (metadata.width <= MAX_DIMENSION && metadata.height <= MAX_DIMENSION) {
-    return imageBuffer;
+  const width = metadata.width;
+  const height = metadata.height;
+  console.log(`[Claude] Image dimensions: ${width}x${height}`);
+
+  // Safety check: Dimensions MUST be under 8000px
+  let workingBuffer = imageBuffer;
+  const needsDimensionResize = width > MAX_DIMENSION || height > MAX_DIMENSION;
+
+  if (needsDimensionResize) {
+    console.log(`[Claude] ⚠️ Dimensions exceed ${MAX_DIMENSION}px! Resizing...`);
+    workingBuffer = await sharp(imageBuffer)
+      .resize(MAX_DIMENSION, MAX_DIMENSION, {
+        fit: 'inside',
+        withoutEnlargement: true,
+      })
+      .jpeg({ quality: 85, progressive: true })
+      .toBuffer();
+
+    const resizedMeta = await sharp(workingBuffer).metadata();
+    console.log(`[Claude] Resized to: ${resizedMeta.width}x${resizedMeta.height}, ${(workingBuffer.length / 1024 / 1024).toFixed(2)}MB`);
   }
 
-  // Resize maintaining aspect ratio
-  return image
-    .resize(MAX_DIMENSION, MAX_DIMENSION, {
-      fit: 'inside',
-      withoutEnlargement: true,
-    })
-    .png()
+  // If already under size limit and is JPEG, return as-is
+  if (workingBuffer.length <= MAX_FILE_SIZE && metadata.format === 'jpeg' && !needsDimensionResize) {
+    console.log('[Claude] ✓ Image already meets requirements');
+    return workingBuffer;
+  }
+
+  // If under size but needed dimension resize or format conversion
+  if (workingBuffer.length <= MAX_FILE_SIZE) {
+    const final = await sharp(workingBuffer)
+      .jpeg({ quality: 85, progressive: true })
+      .toBuffer();
+    console.log(`[Claude] ✓ Final: ${(final.length / 1024 / 1024).toFixed(2)}MB`);
+    return final;
+  }
+
+  // Compress by quality to meet file size requirement
+  console.log('[Claude] Applying quality compression...');
+  let quality = 80;
+  let compressed = workingBuffer;
+
+  while (quality >= 40) {
+    compressed = await sharp(workingBuffer)
+      .jpeg({ quality, progressive: true })
+      .toBuffer();
+
+    const compressedSize = compressed.length;
+    console.log(`[Claude] Quality ${quality}: ${(compressedSize / 1024 / 1024).toFixed(2)}MB`);
+
+    if (compressedSize <= MAX_FILE_SIZE) {
+      console.log(`[Claude] ✓ Compressed to ${(compressedSize / 1024 / 1024).toFixed(2)}MB`);
+      return compressed;
+    }
+
+    quality -= 10;
+  }
+
+  // Further reduce dimensions if still too large
+  console.log('[Claude] Still too large, reducing dimensions further...');
+  const currentMeta = await sharp(workingBuffer).metadata();
+  const currentWidth = currentMeta.width || MAX_DIMENSION;
+  const currentHeight = currentMeta.height || MAX_DIMENSION;
+
+  const resizeFactors = [0.8, 0.7, 0.6, 0.5];
+
+  for (const factor of resizeFactors) {
+    const targetWidth = Math.floor(currentWidth * factor);
+    const targetHeight = Math.floor(currentHeight * factor);
+
+    compressed = await sharp(workingBuffer)
+      .resize(targetWidth, targetHeight, { fit: 'inside' })
+      .jpeg({ quality: 75, progressive: true })
+      .toBuffer();
+
+    const compressedSize = compressed.length;
+    console.log(`[Claude] ${targetWidth}x${targetHeight}: ${(compressedSize / 1024 / 1024).toFixed(2)}MB`);
+
+    if (compressedSize <= MAX_FILE_SIZE) {
+      console.log(`[Claude] ✓ Resized to ${(compressedSize / 1024 / 1024).toFixed(2)}MB`);
+      return compressed;
+    }
+  }
+
+  // Last resort
+  console.log('[Claude] Using maximum compression...');
+  compressed = await sharp(workingBuffer)
+    .resize(2000, 2000, { fit: 'inside' })
+    .jpeg({ quality: 60, progressive: true })
     .toBuffer();
+
+  console.log(`[Claude] Final: ${(compressed.length / 1024 / 1024).toFixed(2)}MB`);
+  return compressed;
 }
 
 // Retry helper with exponential backoff
@@ -70,7 +161,7 @@ async function analyzeSingleScreenshot(
   const resized = await resizeImageForClaude(screenshot);
 
   const message = await retryWithBackoff(() => anthropic.messages.create({
-    model: 'claude-sonnet-4-5-20250929',
+    model: 'claude-haiku-4-5-20251001',
     max_tokens: 2048,
     messages: [
       {
@@ -80,7 +171,7 @@ async function analyzeSingleScreenshot(
             type: 'image',
             source: {
               type: 'base64',
-              media_type: 'image/png',
+              media_type: 'image/jpeg',
               data: resized.toString('base64'),
             },
           },
@@ -156,7 +247,7 @@ export async function analyzeWithClaude(
     // Combine analyses with a final synthesis request
     console.log('[Claude] Synthesizing final analysis...');
     const message = await retryWithBackoff(() => anthropic.messages.create({
-      model: 'claude-sonnet-4-5-20250929',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 2048,
       messages: [
         {
@@ -224,7 +315,7 @@ export async function analyzeSitemapForGaps(
 ): Promise<{ contentGaps: unknown[]; urlStructureIssues: unknown[] }> {
   try {
     const message = await retryWithBackoff(() => anthropic.messages.create({
-      model: 'claude-sonnet-4-5-20250929',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 2048,
       messages: [
         {
@@ -314,7 +405,7 @@ export async function analyzeWithClaudeForStrategy(
       .join('\n');
 
     const message = await retryWithBackoff(() => anthropic.messages.create({
-      model: 'claude-sonnet-4-5-20250929',
+      model: 'claude-haiku-4-5-20251001',
       max_tokens: 3072,
       messages: [
         {

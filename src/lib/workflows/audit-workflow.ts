@@ -1,4 +1,4 @@
-import { captureWebsite, runAccessibilityTests, extractSEOData, isHomepage } from '../puppeteer';
+import { captureAuditData, isHomepage } from '../puppeteer';
 import { analyzeWithClaude } from '../claude';
 import { uploadScreenshot } from '../storage';
 import { AuditExecutionResult } from '@/types';
@@ -12,24 +12,16 @@ export async function executeAudit(
   try {
     console.log(`[Audit ${auditId}] Starting audit for ${url}`);
 
-    // Step 1: Capture screenshots
-    console.log(`[Audit ${auditId}] Capturing screenshots...`);
-    const { desktopScreenshot, mobileScreenshot } = await captureWebsite(url);
+    // Step 1: Comprehensive data capture (single page load for all operations)
+    console.log(`[Audit ${auditId}] Capturing audit data (screenshots, accessibility, SEO)...`);
+    const { desktopScreenshot, mobileScreenshot, accessibilityData, seoData } = await captureAuditData(url);
 
-    // Step 2: Run accessibility tests
-    console.log(`[Audit ${auditId}] Running accessibility tests...`);
-    const accessibilityData = await runAccessibilityTests(url);
-
-    // Step 3: Extract SEO data
-    console.log(`[Audit ${auditId}] Extracting SEO data...`);
-    const seoData = await extractSEOData(url);
-
-    // Step 4: Upload screenshots
+    // Step 2: Upload screenshots
     console.log(`[Audit ${auditId}] Uploading screenshots...`);
     const desktopUrl = await uploadScreenshot(desktopScreenshot, auditId, 'desktop');
     const mobileUrl = await uploadScreenshot(mobileScreenshot, auditId, 'mobile');
 
-    // Step 5: Analyze with Claude
+    // Step 3: Analyze with Claude
     console.log(`[Audit ${auditId}] Analyzing with Claude AI...`);
     const claudeAnalysis = await analyzeWithClaude(
       desktopScreenshot,
@@ -39,10 +31,10 @@ export async function executeAudit(
       seoData
     );
 
-    // Step 6: Calculate SEO score (simplified)
+    // Step 4: Calculate SEO score (simplified)
     const seoScore = calculateSEOScore(seoData);
 
-    // Step 7: Check if homepage and get additional data
+    // Step 5: Check if homepage and get additional data
     const homepage = isHomepage(url);
     let homepageData = {};
 
