@@ -82,9 +82,9 @@ export async function POST(
         try {
           const parsed = audit.keywordTrendData as Prisma.JsonValue;
           if (Array.isArray(parsed)) {
-            keywordTrendData = parsed as KeywordTrendData[];
+            keywordTrendData = parsed as unknown as KeywordTrendData[];
           }
-        } catch (e) {
+        } catch {
           console.warn('[PDF Generation] Failed to parse keywordTrendData for audit', audit.id);
         }
       }
@@ -93,9 +93,9 @@ export async function POST(
         try {
           const parsed = audit.topPages as Prisma.JsonValue;
           if (Array.isArray(parsed)) {
-            topPages = parsed as TopPage[];
+            topPages = parsed as unknown as TopPage[];
           }
-        } catch (e) {
+        } catch {
           console.warn('[PDF Generation] Failed to parse topPages for audit', audit.id);
         }
       }
