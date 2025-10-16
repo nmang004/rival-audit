@@ -4,6 +4,10 @@ import prisma from '@/lib/prisma';
 import { z } from 'zod';
 import { executeAudit } from '@/lib/workflows/audit-workflow';
 
+// Configure Vercel function to allow longer execution time (60 seconds)
+export const maxDuration = 60; // Maximum duration in seconds (requires Vercel Pro plan, otherwise 10s on Hobby)
+export const dynamic = 'force-dynamic'; // Ensure the route is always dynamic
+
 const createAuditSchema = z.object({
   url: z.string().url('Invalid URL format'),
   clientName: z.string().optional(),
@@ -119,20 +123,59 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Start audit execution asynchronously
-    executeAudit(audit.id, url).catch((error) => {
-      console.error(`Error executing audit ${audit.id}:`, error);
-    });
+    console.log(`[Audit ${audit.id}] Starting audit execution for URL: ${url}`);
 
-    return NextResponse.json({
-      success: true,
-      data: audit,
-      message: 'Audit created and execution started',
-    });
+    // Execute audit synchronously and wait for completion
+    // This is necessary on Vercel because serverless functions terminate after response
+    try {
+      await executeAudit(audit.id, url);
+      console.log(`[Audit ${audit.id}] Audit execution completed successfully`);
+
+      // Fetch the updated audit with results
+      const completedAudit = await prisma.audit.findUnique({
+        where: { id: audit.id },
+        include: {
+          createdBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        data: completedAudit,
+        message: 'Audit completed successfully',
+      });
+    } catch (auditError) {
+      // Log the error
+      console.error(`[Audit ${audit.id}] Audit execution failed:`, auditError);
+
+      // Note: Audit status remains IN_PROGRESS to indicate incomplete execution
+      // Consider adding a FAILED status to the AuditStatus enum in the future
+
+      // Return error response
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Audit execution failed',
+          details: auditError instanceof Error ? auditError.message : String(auditError),
+          auditId: audit.id,
+        },
+        { status: 500 }
+      );
+    }
   } catch (error) {
     console.error('Error creating audit:', error);
     return NextResponse.json(
-      { error: 'Failed to create audit' },
+      {
+        success: false,
+        error: 'Failed to create audit',
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     );
   }
