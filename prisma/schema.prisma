@@ -22,6 +22,7 @@ model User {
 
   audits    Audit[]
   reports   Report[]
+  settings  UserSettings?
 
   @@index([clerkId])
   @@index([email])
@@ -31,6 +32,47 @@ enum Role {
   SALES
   ADMIN
   PROJECT_MANAGER
+}
+
+// User Settings - stores user preferences and API keys
+model UserSettings {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // API Keys (encrypted at rest)
+  semrushApiKey       String?
+  claudeApiKey        String?
+  sendgridApiKey      String?
+  slackWebhookUrl     String?
+
+  // Email Preferences
+  emailNotifications  Boolean @default(true)
+  digestFrequency     String  @default("WEEKLY") // DAILY, WEEKLY, MONTHLY, NONE
+  notifyOnComplete    Boolean @default(true)
+  notifyOnStatusChange Boolean @default(true)
+
+  // Report Branding
+  companyName         String?
+  companyLogo         String?
+  brandPrimaryColor   String? // OKLCH format
+  brandSecondaryColor String? // OKLCH format
+  reportFooterText    String? @db.Text
+
+  // Export Preferences
+  defaultExportFormat String  @default("PDF") // PDF, EXCEL, JSON
+  includeScreenshots  Boolean @default(true)
+  includeClaudeAnalysis Boolean @default(true)
+
+  // UI Preferences
+  theme               String  @default("LIGHT") // LIGHT, DARK, AUTO
+  defaultView         String  @default("GRID") // GRID, TABLE
+  itemsPerPage        Int     @default(12)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 // Main Audit model - stores all audit data
