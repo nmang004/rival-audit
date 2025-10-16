@@ -72,14 +72,15 @@ async function waitForDOMStability(page: Page, timeout = 5000): Promise<void> {
 }
 
 /**
- * Scroll through the page VERY slowly, pausing at intervals
- * to trigger Intersection Observer-based lazy loading
+ * Scroll through the page to trigger lazy loading
+ * @param passes - Number of scroll passes (default: 3 for dev, 1 for production)
+ * @param intervalMs - Wait time between scroll steps (default: 300ms for dev, 100ms for production)
  */
-async function autoScroll(page: Page, passes = 3): Promise<void> {
+async function autoScroll(page: Page, passes = 3, intervalMs = 300): Promise<void> {
   for (let pass = 1; pass <= passes; pass++) {
     console.log(`[Puppeteer] Scroll pass ${pass}/${passes}...`);
 
-    await page.evaluate(async () => {
+    await page.evaluate(async (interval) => {
       await new Promise<void>((resolve) => {
         let currentPosition = 0;
         const viewportHeight = window.innerHeight;
@@ -96,28 +97,38 @@ async function autoScroll(page: Page, passes = 3): Promise<void> {
             clearInterval(scrollInterval);
             resolve();
           }
-        }, 300); // Wait 300ms between each scroll step (very slow)
+        }, interval);
       });
-    });
+    }, intervalMs);
 
-    // Wait for DOM changes to settle after scrolling
+    // Wait for DOM changes to settle after scrolling (reduced in serverless mode)
+    const isProduction = process.env.NODE_ENV === 'production';
+    const stabilityTimeout = isProduction ? 2000 : 5000;
+    const postScrollWait = isProduction ? 500 : 2000;
+
     console.log(`[Puppeteer] Waiting for content to load after pass ${pass}...`);
-    await waitForDOMStability(page, 5000);
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await waitForDOMStability(page, stabilityTimeout);
+    await new Promise(resolve => setTimeout(resolve, postScrollWait));
   }
 
   // Scroll back to top
   await page.evaluate(() => {
     window.scrollTo(0, 0);
   });
-  await new Promise(resolve => setTimeout(resolve, 1500));
+  const finalWait = process.env.NODE_ENV === 'production' ? 500 : 1500;
+  await new Promise(resolve => setTimeout(resolve, finalWait));
 }
 
 /**
  * Wait for all images (including lazy-loaded) to load
+ * @param timeout - Max wait time per image (shorter in production)
  */
 async function waitForImages(page: Page): Promise<void> {
-  await page.evaluate(async () => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const imageTimeout = isProduction ? 3000 : 15000; // 3s in prod, 15s in dev
+  const bgImageWait = isProduction ? 500 : 2000; // 500ms in prod, 2s in dev
+
+  await page.evaluate(async (timeout, bgWait) => {
     // Wait for all img tags
     const images = Array.from(document.querySelectorAll('img'));
     await Promise.all(
@@ -126,84 +137,83 @@ async function waitForImages(page: Page): Promise<void> {
         return new Promise((resolve) => {
           img.addEventListener('load', resolve);
           img.addEventListener('error', resolve); // Resolve even on error to not block
-          // Timeout after 15 seconds per image
-          setTimeout(resolve, 15000);
+          setTimeout(resolve, timeout);
         });
       })
     );
 
-    // Also wait for background images loaded via CSS
-    const elementsWithBgImages = Array.from(document.querySelectorAll('*')).filter(el => {
-      const bgImage = window.getComputedStyle(el).backgroundImage;
-      return bgImage && bgImage !== 'none' && bgImage.includes('url(');
-    });
-
-    // Give background images time to load
-    await new Promise(resolve => setTimeout(resolve, 2000));
-  });
+    // Give background images time to load (reduced in production)
+    await new Promise(resolve => setTimeout(resolve, bgWait));
+  }, imageTimeout, bgImageWait);
 }
 
 /**
- * Wait for page to be fully loaded with multiple strategies
- * Optimized for capturing Intersection Observer-based lazy-loaded content
+ * Wait for page to be fully loaded
+ * SERVERLESS MODE: Optimized for speed to fit within Vercel timeout limits
+ * DEVELOPMENT MODE: Comprehensive loading for best quality
  */
 async function waitForPageLoad(page: Page, url: string): Promise<void> {
-  console.log('[Puppeteer] Navigating to:', url);
+  const isProduction = process.env.NODE_ENV === 'production';
+  console.log(`[Puppeteer] Navigating to: ${url} (${isProduction ? 'SERVERLESS' : 'DEV'} mode)`);
 
-  // Try with networkidle2 first (more lenient), fallback to networkidle0, then domcontentloaded
+  // Navigate with appropriate wait strategy
   try {
     await page.goto(url, {
-      waitUntil: 'networkidle2',
-      timeout: 90000
+      waitUntil: isProduction ? 'domcontentloaded' : 'networkidle2', // Faster in prod
+      timeout: isProduction ? 30000 : 90000 // 30s in prod, 90s in dev
     });
-    console.log('[Puppeteer] Page loaded with networkidle2');
+    console.log(`[Puppeteer] Page loaded with ${isProduction ? 'domcontentloaded' : 'networkidle2'}`);
   } catch (navError) {
-    console.log('[Puppeteer] networkidle2 failed, trying networkidle0...');
-    try {
-      await page.goto(url, {
-        waitUntil: 'networkidle0',
-        timeout: 90000
-      });
-      console.log('[Puppeteer] Page loaded with networkidle0');
-    } catch (navError2) {
-      console.log('[Puppeteer] networkidle0 failed, trying domcontentloaded...');
-      await page.goto(url, {
-        waitUntil: 'domcontentloaded',
-        timeout: 90000
-      });
-      console.log('[Puppeteer] Page loaded with domcontentloaded');
-    }
+    console.log('[Puppeteer] Navigation failed, trying fallback...');
+    await page.goto(url, {
+      waitUntil: 'domcontentloaded',
+      timeout: 30000
+    });
+    console.log('[Puppeteer] Page loaded with domcontentloaded (fallback)');
   }
 
-  // Wait for initial page load and JavaScript execution
-  console.log('[Puppeteer] Waiting 5 seconds for initial content and JS execution...');
-  await new Promise(resolve => setTimeout(resolve, 5000));
+  if (isProduction) {
+    // SERVERLESS MODE: Ultra-fast loading (target: <20 seconds total)
+    console.log('[Puppeteer] ⚡ SERVERLESS: Quick load (2s wait)...');
+    await new Promise(resolve => setTimeout(resolve, 2000)); // 2s for JS execution
 
-  // Wait for initial DOM to stabilize
-  console.log('[Puppeteer] Waiting for DOM to stabilize...');
-  await waitForDOMStability(page, 5000);
+    console.log('[Puppeteer] ⚡ SERVERLESS: Single fast scroll...');
+    await autoScroll(page, 1, 100); // 1 pass, 100ms intervals
 
-  // Scroll through page 3 TIMES very slowly to trigger all lazy-loaded content
-  console.log('[Puppeteer] Scrolling to trigger lazy-loaded content (3 passes, viewport-based)...');
-  await autoScroll(page, 3);
+    console.log('[Puppeteer] ⚡ SERVERLESS: Quick image wait...');
+    await waitForImages(page); // 3s max per image
 
-  // Final DOM stability check
-  console.log('[Puppeteer] Final DOM stability check...');
-  await waitForDOMStability(page, 5000);
+    // Scroll to top
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await new Promise(resolve => setTimeout(resolve, 500));
 
-  // Wait for all images (including background images) to load
-  console.log('[Puppeteer] Waiting for all images to load...');
-  await waitForImages(page);
+    console.log('[Puppeteer] ✓ SERVERLESS: Page ready for screenshot');
+  } else {
+    // DEVELOPMENT MODE: Comprehensive loading (best quality)
+    console.log('[Puppeteer] Waiting 5 seconds for initial content and JS execution...');
+    await new Promise(resolve => setTimeout(resolve, 5000));
 
-  // Additional wait for animations, transitions, and any final rendering
-  console.log('[Puppeteer] Final wait for animations and rendering...');
-  await new Promise(resolve => setTimeout(resolve, 3000));
+    console.log('[Puppeteer] Waiting for DOM to stabilize...');
+    await waitForDOMStability(page, 5000);
 
-  // One more scroll to top to ensure everything is visible
-  await page.evaluate(() => window.scrollTo(0, 0));
-  await new Promise(resolve => setTimeout(resolve, 2000));
+    console.log('[Puppeteer] Scrolling to trigger lazy-loaded content (3 passes)...');
+    await autoScroll(page, 3, 300); // 3 passes, 300ms intervals
 
-  console.log('[Puppeteer] ✓ Page fully loaded and ready for screenshot');
+    console.log('[Puppeteer] Final DOM stability check...');
+    await waitForDOMStability(page, 5000);
+
+    console.log('[Puppeteer] Waiting for all images to load...');
+    await waitForImages(page); // 15s max per image
+
+    console.log('[Puppeteer] Final wait for animations and rendering...');
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    // Scroll to top
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    console.log('[Puppeteer] ✓ Page fully loaded and ready for screenshot');
+  }
 }
 
 /**
