@@ -34,17 +34,11 @@ enum Role {
   PROJECT_MANAGER
 }
 
-// User Settings - stores user preferences and API keys
+// User Settings - stores user preferences
 model UserSettings {
   id        String   @id @default(cuid())
   userId    String   @unique
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // API Keys (encrypted at rest)
-  semrushApiKey       String?
-  claudeApiKey        String?
-  sendgridApiKey      String?
-  slackWebhookUrl     String?
 
   // Email Preferences
   emailNotifications  Boolean @default(true)
