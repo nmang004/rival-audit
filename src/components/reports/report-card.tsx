@@ -15,20 +15,20 @@ export function ReportCard({ report, onDelete }: ReportCardProps) {
   const auditCount = report.reportAudits.length;
 
   return (
-    <Card className="hover:shadow-lg transition-shadow">
-      <CardHeader>
+    <Card className="card-hover-effect gradient-border">
+      <CardHeader className="sage-bg-subtle">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <CardTitle className="text-xl mb-2">{report.name}</CardTitle>
+            <CardTitle className="text-2xl gradient-text mb-2">{report.name}</CardTitle>
             {report.description && (
-              <CardDescription className="line-clamp-2">
+              <CardDescription className="line-clamp-2 text-base">
                 {report.description}
               </CardDescription>
             )}
           </div>
           <div className="flex gap-2">
             <Link href={`/reports/${report.id}`}>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="button-scale">
                 <Edit className="w-4 h-4" />
               </Button>
             </Link>
@@ -37,7 +37,7 @@ export function ReportCard({ report, onDelete }: ReportCardProps) {
                 variant="outline"
                 size="sm"
                 onClick={() => onDelete(report.id)}
-                className="text-red-600 hover:bg-red-50"
+                className="text-red-600 hover:bg-red-50 button-scale"
               >
                 <Trash2 className="w-4 h-4" />
               </Button>
@@ -46,23 +46,23 @@ export function ReportCard({ report, onDelete }: ReportCardProps) {
         </div>
       </CardHeader>
 
-      <CardContent>
-        <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
+      <CardContent className="pt-4">
+        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-6">
           <span className="flex items-center gap-1">
-            <FileText className="w-4 h-4" />
-            {auditCount} {auditCount === 1 ? 'URL' : 'URLs'}
+            <FileText className="w-4 h-4 text-primary" />
+            <span className="font-medium text-primary">{auditCount}</span> {auditCount === 1 ? 'URL' : 'URLs'}
           </span>
           <span>
             Created {new Date(report.createdAt).toLocaleDateString()}
           </span>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {report.pdfUrl && (
             <a href={report.pdfUrl} target="_blank" rel="noopener noreferrer">
-              <Button variant="outline" size="sm" className="flex items-center gap-2">
+              <Button variant="outline" size="sm" className="flex items-center gap-2 button-scale">
                 <Download className="w-4 h-4" />
-                Download PDF
+                PDF
               </Button>
             </a>
           )}
@@ -72,14 +72,14 @@ export function ReportCard({ report, onDelete }: ReportCardProps) {
               target="_blank"
               rel="noopener noreferrer"
             >
-              <Button variant="outline" size="sm" className="flex items-center gap-2">
+              <Button variant="outline" size="sm" className="flex items-center gap-2 button-scale">
                 <Share2 className="w-4 h-4" />
-                View Public Link
+                Public
               </Button>
             </a>
           )}
-          <Link href={`/reports/${report.id}`}>
-            <Button variant="default" size="sm">
+          <Link href={`/reports/${report.id}`} className="flex-1">
+            <Button variant="default" size="sm" className="w-full button-scale">
               View Details
             </Button>
           </Link>

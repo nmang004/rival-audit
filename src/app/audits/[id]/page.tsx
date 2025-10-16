@@ -102,7 +102,7 @@ export default function AuditDetailPage({ params }: { params: Promise<{ id: stri
   // SITEMAP AUDIT VIEW - Completely separate from regular audits
   if (audit.isSitemapAudit) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
         <div className="container mx-auto px-4 py-8 max-w-7xl">
           {/* Back button */}
           <Button asChild variant="ghost" className="mb-6">
@@ -113,14 +113,14 @@ export default function AuditDetailPage({ params }: { params: Promise<{ id: stri
           </Button>
 
           {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-2">
-              <FileSearch className="w-8 h-8 text-purple-600" />
-              <h1 className="text-3xl font-bold text-gray-900">Sitemap Audit</h1>
+          <div className="sage-bg-gradient text-white rounded-lg p-6 lg:p-8 mb-8 animate-fadeIn">
+            <div className="flex items-center gap-3 mb-4">
+              <FileSearch className="w-10 h-10 animate-sparkle" />
+              <h1 className="text-3xl lg:text-4xl font-bold">Sitemap Audit</h1>
             </div>
-            <p className="text-xl text-gray-600 break-all mb-4">{audit.url}</p>
+            <p className="text-xl opacity-90 break-all mb-4">{audit.url}</p>
 
-            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+            <div className="flex flex-wrap items-center gap-4 text-sm opacity-90">
               {audit.clientName && (
                 <div className="flex items-center gap-1">
                   <User className="w-4 h-4" />
@@ -139,15 +139,15 @@ export default function AuditDetailPage({ params }: { params: Promise<{ id: stri
               </div>
             </div>
 
-            <div className="mt-4 flex items-center gap-4">
+            <div className="mt-6 flex flex-wrap items-center gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-700">Status:</span>
+                <span className="text-sm font-medium opacity-90">Status:</span>
                 <Select
                   value={audit.status}
                   onValueChange={(value) => updateStatusMutation.mutate(value)}
                   disabled={updateStatusMutation.isPending}
                 >
-                  <SelectTrigger className="w-[180px]">
+                  <SelectTrigger className="w-[180px] bg-white/20 text-white border-white/30">
                     <SelectValue>
                       <StatusBadge status={audit.status} />
                     </SelectValue>
@@ -162,7 +162,7 @@ export default function AuditDetailPage({ params }: { params: Promise<{ id: stri
                 </Select>
               </div>
 
-              <Button asChild variant="outline" size="sm">
+              <Button variant="secondary" size="sm" className="button-scale" asChild>
                 <a href={audit.url} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="w-4 h-4 mr-2" />
                   View Sitemap
@@ -274,7 +274,7 @@ export default function AuditDetailPage({ params }: { params: Promise<{ id: stri
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Back button */}
         <Button asChild variant="ghost" className="mb-6">
@@ -285,13 +285,13 @@ export default function AuditDetailPage({ params }: { params: Promise<{ id: stri
         </Button>
 
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-4">
+        <div className="bg-gradient-primary text-white rounded-lg p-6 lg:p-8 mb-8 animate-fadeIn">
+          <div className="flex flex-col gap-4">
             <div className="flex-1">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2 break-all">
+              <h1 className="text-3xl lg:text-4xl font-bold mb-4 break-all leading-tight">
                 {audit.url}
               </h1>
-              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+              <div className="flex flex-wrap items-center gap-4 text-sm opacity-90">
                 {audit.clientName && (
                   <div className="flex items-center gap-1">
                     <User className="w-4 h-4" />
@@ -311,15 +311,15 @@ export default function AuditDetailPage({ params }: { params: Promise<{ id: stri
               </div>
             </div>
 
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-700">Status:</span>
+                <span className="text-sm font-medium opacity-90">Status:</span>
                 <Select
                   value={audit.status}
                   onValueChange={(value) => updateStatusMutation.mutate(value)}
                   disabled={updateStatusMutation.isPending}
                 >
-                  <SelectTrigger className="w-[180px]">
+                  <SelectTrigger className="w-[180px] bg-white/20 text-white border-white/30">
                     <SelectValue>
                       <StatusBadge status={audit.status} />
                     </SelectValue>
@@ -334,7 +334,7 @@ export default function AuditDetailPage({ params }: { params: Promise<{ id: stri
                 </Select>
               </div>
 
-              <Button asChild variant="outline" size="sm">
+              <Button variant="secondary" size="sm" className="button-scale" asChild>
                 <a href={audit.url} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="w-4 h-4 mr-2" />
                   Visit Website
@@ -362,29 +362,53 @@ export default function AuditDetailPage({ params }: { params: Promise<{ id: stri
         )}
 
         {/* Score Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardContent className="pt-6 flex justify-center">
-              <ScoreDisplay score={audit.seoScore} label="SEO Score" size="lg" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 animate-slideUp">
+          <Card className="card-hover-effect text-center">
+            <CardContent className="py-8">
+              <div className="w-32 h-32 mx-auto mb-4 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-lg">
+                <span className="text-5xl font-bold text-white">
+                  {audit.seoScore ?? '-'}
+                </span>
+              </div>
+              <h3 className="font-semibold text-lg text-primary">SEO Score</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                {audit.seoScore ? audit.seoScore >= 80 ? 'Excellent' : audit.seoScore >= 60 ? 'Good' : 'Needs Work' : 'Pending'}
+              </p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="pt-6 flex justify-center">
-              <ScoreDisplay score={audit.accessibilityScore} label="Accessibility" size="lg" />
+          <Card className="card-hover-effect text-center">
+            <CardContent className="py-8">
+              <div className="w-32 h-32 mx-auto mb-4 rounded-full bg-gradient-to-br from-primary/80 to-primary/60 flex items-center justify-center shadow-lg">
+                <span className="text-5xl font-bold text-white">
+                  {audit.accessibilityScore ?? '-'}
+                </span>
+              </div>
+              <h3 className="font-semibold text-lg text-primary">Accessibility</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                {audit.accessibilityScore ? audit.accessibilityScore >= 80 ? 'Excellent' : audit.accessibilityScore >= 60 ? 'Good' : 'Needs Work' : 'Pending'}
+              </p>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="pt-6 flex justify-center">
-              <ScoreDisplay score={audit.designScore} label="Design" size="lg" />
+          <Card className="card-hover-effect text-center">
+            <CardContent className="py-8">
+              <div className="w-32 h-32 mx-auto mb-4 rounded-full bg-gradient-to-br from-secondary to-secondary/80 flex items-center justify-center shadow-lg">
+                <span className="text-5xl font-bold text-white">
+                  {audit.designScore ?? '-'}
+                </span>
+              </div>
+              <h3 className="font-semibold text-lg text-secondary">Design</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                {audit.designScore ? audit.designScore >= 8 ? 'Excellent' : audit.designScore >= 6 ? 'Good' : 'Needs Work' : 'Pending'}
+              </p>
             </CardContent>
           </Card>
         </div>
 
         {/* Screenshots */}
         {(audit.screenshotDesktop || audit.screenshotMobile) && (
-          <Card className="mb-8">
+          <Card className="mb-8 card-hover">
             <CardHeader>
               <CardTitle>Screenshots</CardTitle>
               <CardDescription>Desktop and mobile views of the website</CardDescription>
@@ -392,28 +416,28 @@ export default function AuditDetailPage({ params }: { params: Promise<{ id: stri
             <CardContent>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {audit.screenshotDesktop && (
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-700 mb-3">Desktop View</h3>
-                    <div className="relative border rounded-lg overflow-hidden bg-gray-100 aspect-[16/10]">
+                  <div className="relative group">
+                    <h3 className="text-sm font-semibold text-primary mb-3">Desktop View</h3>
+                    <div className="relative border-2 sage-border rounded-lg overflow-hidden bg-gray-100 aspect-[16/10]">
                       <Image
                         src={audit.screenshotDesktop}
                         alt="Desktop screenshot"
                         fill
-                        className="object-contain"
+                        className="object-contain transition-transform duration-300 group-hover:scale-105"
                       />
                     </div>
                   </div>
                 )}
 
                 {audit.screenshotMobile && (
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-700 mb-3">Mobile View</h3>
-                    <div className="relative border rounded-lg overflow-hidden bg-gray-100 aspect-[9/16] max-w-[375px] mx-auto">
+                  <div className="relative group">
+                    <h3 className="text-sm font-semibold text-primary mb-3">Mobile View</h3>
+                    <div className="relative border-2 sage-border rounded-lg overflow-hidden bg-gray-100 aspect-[9/16] max-w-[375px] mx-auto">
                       <Image
                         src={audit.screenshotMobile}
                         alt="Mobile screenshot"
                         fill
-                        className="object-contain"
+                        className="object-contain transition-transform duration-300 group-hover:scale-105"
                       />
                     </div>
                   </div>
@@ -425,9 +449,12 @@ export default function AuditDetailPage({ params }: { params: Promise<{ id: stri
 
         {/* Claude AI Analysis */}
         {claudeData && (
-          <Card className="mb-8">
+          <Card className="mb-8 sage-bg-subtle border-l-4 border-l-secondary card-glow">
             <CardHeader>
-              <CardTitle>AI-Powered Analysis</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle2 className="w-6 h-6 text-secondary animate-sparkle" />
+                AI-Powered Analysis
+              </CardTitle>
               <CardDescription>Comprehensive UI/UX analysis by Claude AI</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">

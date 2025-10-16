@@ -43,94 +43,111 @@ export default async function PublicReportPage({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
-          <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">
-                {report.name}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
+      <div className="max-w-6xl mx-auto py-12 px-4">
+        {/* Rival Digital Branded Header */}
+        <div className="sage-bg-gradient py-12 px-8 mb-10 rounded-lg shadow-2xl animate-fadeIn">
+          <div className="max-w-4xl mx-auto text-center text-white">
+            <div className="mb-6">
+              <h1 className="text-5xl lg:text-6xl font-bold mb-3 leading-tight">
+                Rival Digital
               </h1>
-              {report.description && (
-                <p className="text-lg text-gray-600 mb-4">
-                  {report.description}
-                </p>
-              )}
-              <div className="flex items-center gap-4 text-sm text-gray-500">
-                <span className="flex items-center gap-1">
-                  <Globe className="w-4 h-4" />
-                  {report.reportAudits.length} {report.reportAudits.length === 1 ? 'Website' : 'Websites'} Analyzed
-                </span>
-                <span>
-                  Created {new Date(report.createdAt).toLocaleDateString()}
-                </span>
-              </div>
+              <p className="text-lg opacity-75">SEO Audit Report</p>
+            </div>
+
+            <div className="my-8 h-px bg-white/20"></div>
+
+            <h2 className="text-3xl lg:text-4xl font-bold mb-4">
+              {report.name}
+            </h2>
+            {report.description && (
+              <p className="text-xl opacity-90 mb-6 leading-relaxed">
+                {report.description}
+              </p>
+            )}
+            <div className="flex flex-wrap justify-center items-center gap-6 text-sm opacity-90">
+              <span className="flex items-center gap-2">
+                <Globe className="w-5 h-5" />
+                {report.reportAudits.length} {report.reportAudits.length === 1 ? 'Website' : 'Websites'} Analyzed
+              </span>
+              <span>
+                Created {new Date(report.createdAt).toLocaleDateString()}
+              </span>
             </div>
             {report.pdfUrl && (
-              <a href={report.pdfUrl} target="_blank" rel="noopener noreferrer">
-                <Button className="flex items-center gap-2">
-                  <Download className="w-4 h-4" />
-                  Download PDF
-                </Button>
-              </a>
+              <div className="mt-8">
+                <a href={report.pdfUrl} target="_blank" rel="noopener noreferrer">
+                  <Button variant="secondary" size="lg" className="button-scale button-glow">
+                    <Download className="w-5 h-5 mr-2" />
+                    Download Full Report
+                  </Button>
+                </a>
+              </div>
             )}
           </div>
         </div>
 
         {/* Audits List */}
-        <div className="space-y-6">
+        <div className="space-y-8 animate-slideUp">
           {report.reportAudits.map((ra, index) => {
             const audit = ra.audit;
             return (
-              <Card key={audit.id} className="overflow-hidden">
-                <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
+              <Card key={audit.id} className="overflow-hidden card-hover-effect shadow-lg">
+                <CardHeader className="bg-gradient-to-r from-primary to-primary/80 text-white p-8">
                   <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-2xl mb-2">
-                        {index + 1}. {audit.url}
-                      </CardTitle>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center font-bold text-lg">
+                          {index + 1}
+                        </div>
+                        <CardTitle className="text-2xl lg:text-3xl">
+                          {audit.url}
+                        </CardTitle>
+                      </div>
                       {audit.clientName && (
-                        <CardDescription className="text-blue-100">
+                        <CardDescription className="text-white/90 text-base ml-13">
                           Client: {audit.clientName}
                         </CardDescription>
                       )}
                     </div>
                     {audit.isHomepage && (
-                      <Badge variant="secondary" className="bg-white text-blue-600">
+                      <Badge variant="secondary" className="bg-secondary text-white animate-badge-pop">
                         Homepage
                       </Badge>
                     )}
                   </div>
                 </CardHeader>
 
-                <CardContent className="p-6">
+                <CardContent className="p-8">
                   {/* Performance Scores */}
-                  <div className="mb-6">
-                    <h3 className="text-lg font-semibold mb-3">Performance Scores</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="mb-8">
+                    <h3 className="text-xl font-bold text-primary mb-4">Performance Scores</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       {audit.seoScore !== null && (
-                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                          <span className="text-sm font-medium text-gray-700">SEO</span>
-                          <Badge className={`${getScoreBadgeColor(audit.seoScore)} text-white text-lg px-3 py-1`}>
-                            {audit.seoScore}/100
-                          </Badge>
+                        <div className="text-center p-6 sage-bg-subtle rounded-lg border-2 sage-border">
+                          <div className="text-sm font-medium text-muted-foreground mb-2">SEO</div>
+                          <div className="text-4xl font-bold text-primary mb-2">
+                            {audit.seoScore}
+                          </div>
+                          <div className="text-xs text-muted-foreground">out of 100</div>
                         </div>
                       )}
                       {audit.accessibilityScore !== null && (
-                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                          <span className="text-sm font-medium text-gray-700">Accessibility</span>
-                          <Badge className={`${getScoreBadgeColor(audit.accessibilityScore)} text-white text-lg px-3 py-1`}>
-                            {audit.accessibilityScore}/100
-                          </Badge>
+                        <div className="text-center p-6 sage-bg-subtle rounded-lg border-2 sage-border">
+                          <div className="text-sm font-medium text-muted-foreground mb-2">Accessibility</div>
+                          <div className="text-4xl font-bold text-primary mb-2">
+                            {audit.accessibilityScore}
+                          </div>
+                          <div className="text-xs text-muted-foreground">out of 100</div>
                         </div>
                       )}
                       {audit.designScore !== null && (
-                        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                          <span className="text-sm font-medium text-gray-700">Design</span>
-                          <Badge className={`${getScoreBadgeColor(audit.designScore * 10)} text-white text-lg px-3 py-1`}>
-                            {audit.designScore}/10
-                          </Badge>
+                        <div className="text-center p-6 bg-gradient-to-br from-secondary/10 to-secondary/5 rounded-lg border-2 border-secondary/20">
+                          <div className="text-sm font-medium text-muted-foreground mb-2">Design</div>
+                          <div className="text-4xl font-bold text-secondary mb-2">
+                            {audit.designScore}
+                          </div>
+                          <div className="text-xs text-muted-foreground">out of 10</div>
                         </div>
                       )}
                     </div>
@@ -138,10 +155,10 @@ export default async function PublicReportPage({
 
                   {/* Homepage Metrics */}
                   {audit.isHomepage && audit.totalKeywords && (
-                    <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="mb-8 p-6 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-lg border-2 border-primary/20">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-blue-900">Total Keywords</span>
-                        <span className="text-2xl font-bold text-blue-600">
+                        <span className="text-sm font-semibold text-primary">Total Keywords</span>
+                        <span className="text-3xl font-bold gradient-text">
                           {audit.totalKeywords.toLocaleString()}
                         </span>
                       </div>
@@ -187,10 +204,10 @@ export default async function PublicReportPage({
 
                   {/* AI Analysis */}
                   {audit.claudeAnalysis && (
-                    <div className="mb-6">
-                      <h3 className="text-lg font-semibold mb-3">AI Analysis</h3>
-                      <div className="bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-4">
-                        <p className="text-gray-700 whitespace-pre-wrap">
+                    <div className="mb-8">
+                      <h3 className="text-xl font-bold text-primary mb-4">AI Analysis</h3>
+                      <div className="sage-bg-subtle border-l-4 border-l-secondary rounded-lg p-6">
+                        <p className="text-foreground whitespace-pre-wrap leading-relaxed">
                           {audit.claudeAnalysis}
                         </p>
                       </div>
@@ -198,12 +215,12 @@ export default async function PublicReportPage({
                   )}
 
                   {/* View Full URL */}
-                  <div className="flex justify-end">
+                  <div className="flex justify-end pt-4 border-t">
                     <a
                       href={audit.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-700 flex items-center gap-1 text-sm font-medium"
+                      className="text-primary hover:text-secondary flex items-center gap-2 font-medium transition-colors button-scale"
                     >
                       Visit Website
                       <ExternalLink className="w-4 h-4" />
@@ -215,11 +232,14 @@ export default async function PublicReportPage({
           })}
         </div>
 
-        {/* Footer */}
-        <div className="mt-8 text-center text-gray-600">
-          <p className="text-sm">
-            Generated with Sales SEO Audit Tool
-          </p>
+        {/* Branded Footer */}
+        <div className="mt-12 text-center">
+          <div className="sage-bg-gradient rounded-lg p-8 text-white">
+            <h3 className="text-2xl font-bold mb-2">Powered by Rival Digital</h3>
+            <p className="opacity-75">
+              Professional SEO audit and website analysis
+            </p>
+          </div>
         </div>
       </div>
     </div>

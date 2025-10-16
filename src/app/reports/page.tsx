@@ -67,26 +67,29 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Reports</h1>
-          <p className="text-gray-600 mt-2">
-            Create and manage multi-URL audit reports
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
+      <div className="max-w-7xl mx-auto p-6">
+        {/* Hero Header */}
+        <div className="sage-bg-gradient rounded-lg p-8 mb-8 text-white animate-fadeIn">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl lg:text-5xl font-bold mb-3">Reports</h1>
+              <p className="text-lg opacity-90">
+                Create professional multi-URL audit reports
+              </p>
+            </div>
+            <Link href="/reports/new">
+              <Button variant="secondary" size="lg" className="button-scale button-glow">
+                <Plus className="w-5 h-5 mr-2" />
+                New Report
+              </Button>
+            </Link>
+          </div>
         </div>
-        <Link href="/reports/new">
-          <Button className="flex items-center gap-2">
-            <Plus className="w-4 h-4" />
-            New Report
-          </Button>
-        </Link>
-      </div>
 
       {/* Reports List */}
       {reports && reports.length > 0 ? (
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2 animate-slideUp">
           {reports.map(report => (
             <ReportCard
               key={report.id}
@@ -96,32 +99,33 @@ export default function ReportsPage() {
           ))}
         </div>
       ) : (
-        <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-          <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+        <div className="text-center py-16 sage-bg-subtle rounded-lg border-2 border-dashed sage-border">
+          <FileText className="w-24 h-24 text-secondary opacity-50 mx-auto mb-6 animate-float" />
+          <h2 className="text-2xl font-bold gradient-heading mb-4">
             No reports yet
           </h2>
-          <p className="text-gray-600 mb-6">
+          <p className="text-muted-foreground mb-6 text-lg max-w-md mx-auto">
             Create your first multi-URL report to get started
           </p>
           <Link href="/reports/new">
-            <Button className="flex items-center gap-2">
-              <Plus className="w-4 h-4" />
+            <Button size="lg" className="button-scale animate-pulse-glow">
+              <Plus className="w-5 h-5 mr-2" />
               Create Your First Report
             </Button>
           </Link>
         </div>
       )}
 
-      {/* Delete Dialog */}
-      {reportToDelete && (
-        <DeleteReportDialog
-          open={deleteDialogOpen}
-          onOpenChange={setDeleteDialogOpen}
-          onConfirm={handleDeleteConfirm}
-          reportName={reportToDelete.name}
-        />
-      )}
+        {/* Delete Dialog */}
+        {reportToDelete && (
+          <DeleteReportDialog
+            open={deleteDialogOpen}
+            onOpenChange={setDeleteDialogOpen}
+            onConfirm={handleDeleteConfirm}
+            reportName={reportToDelete.name}
+          />
+        )}
+      </div>
     </div>
   );
 }

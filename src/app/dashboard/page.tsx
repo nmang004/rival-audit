@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useState } from 'react';
-import { Search, Loader2, FileText, FileSearch, Globe } from 'lucide-react';
+import { Search, Loader2, FileText, FileSearch, Globe, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function DashboardPage() {
@@ -147,18 +147,27 @@ export default function DashboardPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">SEO Audit Dashboard</h1>
-          <p className="text-gray-600">Create and manage website audits for your sales pipeline</p>
+        {/* Hero Section */}
+        <div className="sage-bg-gradient py-12 px-6 mb-8 rounded-lg animate-fadeIn">
+          <div className="max-w-4xl mx-auto text-center text-white">
+            <h1 className="text-4xl lg:text-5xl font-bold mb-4 leading-tight">
+              Sales SEO Audit Tool
+            </h1>
+            <p className="text-lg lg:text-xl opacity-90 mb-2">
+              AI-powered website analysis for closing more deals
+            </p>
+            <p className="text-sm opacity-75">
+              Powered by Rival Digital
+            </p>
+          </div>
         </div>
 
         {/* Audit Creation Tabs */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle>Create New Audit</CardTitle>
+        <Card className="mb-8 card-hover-effect animate-slideUp">
+          <CardHeader className="sage-bg-subtle">
+            <CardTitle className="text-2xl">Create New Audit</CardTitle>
             <CardDescription>
               Choose between a single URL audit or a comprehensive sitemap audit
             </CardDescription>
@@ -313,18 +322,28 @@ export default function DashboardPage() {
         )}
 
         {!isLoading && !error && filteredAudits && filteredAudits.length === 0 && (
-          <Card>
-            <CardContent className="py-12">
+          <Card className="sage-bg-subtle border-2 border-dashed sage-border">
+            <CardContent className="py-16">
               <div className="flex flex-col items-center text-center">
-                <FileText className="w-12 h-12 text-gray-300 mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                <FileText className="w-24 h-24 text-secondary opacity-50 mb-6 animate-float" />
+                <h3 className="text-2xl font-bold gradient-heading mb-4">
                   {searchQuery || statusFilter !== 'ALL' ? 'No audits found' : 'No audits yet'}
                 </h3>
-                <p className="text-gray-600 max-w-md">
+                <p className="text-muted-foreground max-w-md mb-6 text-lg">
                   {searchQuery || statusFilter !== 'ALL'
                     ? 'Try adjusting your search or filter criteria'
-                    : 'Create your first audit to get started'}
+                    : 'Create your first SEO audit to start analyzing websites and closing deals'}
                 </p>
+                {!searchQuery && statusFilter === 'ALL' && (
+                  <Button
+                    size="lg"
+                    className="button-scale animate-pulse-glow"
+                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                  >
+                    <Plus className="w-5 h-5 mr-2" />
+                    Create Your First Audit
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>

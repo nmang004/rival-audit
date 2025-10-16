@@ -164,79 +164,85 @@ export default function ReportDetailPage({
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      {/* Header */}
-      <div className="mb-6">
-        <Link href="/reports">
-          <Button variant="ghost" className="mb-4 flex items-center gap-2">
-            <ArrowLeft className="w-4 h-4" />
-            Back to Reports
-          </Button>
-        </Link>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50">
+      <div className="max-w-6xl mx-auto p-6">
+        {/* Header */}
+        <div className="mb-6">
+          <Link href="/reports">
+            <Button variant="ghost" className="mb-4 flex items-center gap-2">
+              <ArrowLeft className="w-4 h-4" />
+              Back to Reports
+            </Button>
+          </Link>
 
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{report.name}</h1>
-            {report.description && (
-              <p className="text-gray-600 mb-4">{report.description}</p>
-            )}
-            <div className="flex items-center gap-4 text-sm text-gray-600">
-              <span>{report.reportAudits.length} URL{report.reportAudits.length !== 1 ? 's' : ''}</span>
-              <span>Created {new Date(report.createdAt).toLocaleDateString()}</span>
-              <span>Updated {new Date(report.updatedAt).toLocaleDateString()}</span>
+          <div className="bg-gradient-primary text-white rounded-lg p-6 lg:p-8 animate-fadeIn">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h1 className="text-3xl lg:text-4xl font-bold mb-3 leading-tight">{report.name}</h1>
+                {report.description && (
+                  <p className="text-lg opacity-90 mb-4">{report.description}</p>
+                )}
+                <div className="flex flex-wrap items-center gap-4 text-sm opacity-90">
+                  <span className="flex items-center gap-1">
+                    <FileText className="w-4 h-4" />
+                    {report.reportAudits.length} URL{report.reportAudits.length !== 1 ? 's' : ''}
+                  </span>
+                  <span>Created {new Date(report.createdAt).toLocaleDateString()}</span>
+                  <span>Updated {new Date(report.updatedAt).toLocaleDateString()}</span>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <Button variant="secondary" onClick={handleDelete} className="text-white hover:bg-red-600 button-scale">
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete
+                </Button>
+              </div>
             </div>
           </div>
-
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={handleDelete} className="text-red-600 hover:bg-red-50">
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete
-            </Button>
-          </div>
         </div>
-      </div>
 
       {/* PDF Report Section */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5" />
+      <Card className="mb-6 card-glow animate-slideUp">
+        <CardHeader className="bg-gradient-to-r from-primary/5 to-secondary/5">
+          <CardTitle className="flex items-center gap-2 text-primary">
+            <FileText className="w-6 h-6" />
             PDF Report
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           {report.pdfUrl ? (
-            <div className="flex items-center gap-4">
-              <CheckCircle2 className="w-5 h-5 text-green-600" />
+            <div className="flex items-center gap-4 animate-fadeIn">
+              <CheckCircle2 className="w-10 h-10 text-green-500 animate-celebrate" />
               <div className="flex-1">
-                <p className="font-medium text-gray-900">PDF Generated</p>
-                <p className="text-sm text-gray-600">Your report is ready to download</p>
+                <p className="font-semibold text-lg text-primary">PDF Generated</p>
+                <p className="text-sm text-muted-foreground">Your professional report is ready to download</p>
               </div>
               <a href={report.pdfUrl} target="_blank" rel="noopener noreferrer">
-                <Button className="flex items-center gap-2">
-                  <Download className="w-4 h-4" />
+                <Button className="button-glow button-scale">
+                  <Download className="w-4 h-4 mr-2" />
                   Download PDF
                 </Button>
               </a>
             </div>
           ) : (
             <div>
-              <p className="text-gray-600 mb-4">
+              <p className="text-muted-foreground mb-6">
                 Generate a professional PDF report containing all selected audits.
               </p>
               <Button
                 onClick={handleGeneratePDF}
                 disabled={generatePDFMutation.isPending}
-                className="flex items-center gap-2"
+                className="button-scale animate-pulse-glow"
               >
                 {generatePDFMutation.isPending ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
                     Generating...
                   </>
                 ) : (
                   <>
-                    <FileText className="w-4 h-4" />
+                    <FileText className="w-4 h-4 mr-2" />
                     Generate PDF
                   </>
                 )}
@@ -247,14 +253,14 @@ export default function ReportDetailPage({
       </Card>
 
       {/* Shareable Link Section */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <LinkIcon className="w-5 h-5" />
+      <Card className="mb-6 card-glow animate-slideUp">
+        <CardHeader className="bg-gradient-to-r from-secondary/5 to-primary/5">
+          <CardTitle className="flex items-center gap-2 text-primary">
+            <LinkIcon className="w-6 h-6" />
             Shareable Link
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           {report.shareableLink ? (
             <div className="space-y-4">
               <div className="flex items-center gap-4">
@@ -397,23 +403,24 @@ export default function ReportDetailPage({
         </CardContent>
       </Card>
 
-      {/* Share Link Dialog */}
-      {shareableLink && (
-        <ShareLinkDialog
-          open={shareLinkDialogOpen}
-          onOpenChange={setShareLinkDialogOpen}
-          shareableLink={shareableLink.shareableLink}
-          publicUrl={shareableLink.publicUrl}
-        />
-      )}
+        {/* Share Link Dialog */}
+        {shareableLink && (
+          <ShareLinkDialog
+            open={shareLinkDialogOpen}
+            onOpenChange={setShareLinkDialogOpen}
+            shareableLink={shareableLink.shareableLink}
+            publicUrl={shareableLink.publicUrl}
+          />
+        )}
 
-      {/* Delete Dialog */}
-      <DeleteReportDialog
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
-        onConfirm={handleDeleteConfirm}
-        reportName={report.name}
-      />
+        {/* Delete Dialog */}
+        <DeleteReportDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          onConfirm={handleDeleteConfirm}
+          reportName={report.name}
+        />
+      </div>
     </div>
   );
 }

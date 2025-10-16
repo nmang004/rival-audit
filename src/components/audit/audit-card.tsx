@@ -34,18 +34,18 @@ export function AuditCard({ audit, onDelete }: AuditCardProps) {
   };
 
   return (
-    <Card className="overflow-hidden hover:shadow-lg transition-shadow">
-      <CardHeader className="pb-3">
+    <Card className="overflow-hidden card-hover-effect subtle-border">
+      <CardHeader className="pb-3 sage-bg-subtle">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <Link
               href={`/audits/${audit.id}`}
-              className="text-lg font-semibold hover:text-blue-600 transition-colors line-clamp-1 block"
+              className="text-lg font-semibold text-primary hover:text-secondary transition-colors line-clamp-1 block"
             >
               {audit.url}
             </Link>
             {audit.clientName && (
-              <p className="text-sm text-gray-600 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 {audit.clientName}
               </p>
             )}
@@ -53,7 +53,7 @@ export function AuditCard({ audit, onDelete }: AuditCardProps) {
           <div className="flex flex-col gap-2 items-end">
             <StatusBadge status={audit.status} />
             {audit.isHomepage && (
-              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-300">
+              <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-300 animate-badge-pop">
                 <Globe className="w-3 h-3 mr-1" />
                 Homepage
               </Badge>
@@ -71,22 +71,22 @@ export function AuditCard({ audit, onDelete }: AuditCardProps) {
         </div>
 
         {/* Metadata */}
-        <div className="mt-4 pt-3 border-t text-xs text-gray-500">
+        <div className="mt-4 pt-3 border-t text-xs text-muted-foreground">
           <p>
             Created {formatDistanceToNow(new Date(audit.createdAt), { addSuffix: true })}
           </p>
         </div>
       </CardContent>
 
-      <CardFooter className="flex gap-2 pt-3">
-        <Button asChild variant="default" size="sm" className="flex-1">
+      <CardFooter className="flex gap-2 pt-3 bg-muted/30">
+        <Button asChild variant="default" size="sm" className="flex-1 button-scale">
           <Link href={`/audits/${audit.id}`}>
             <Eye className="w-4 h-4 mr-1" />
             View
           </Link>
         </Button>
 
-        <Button asChild variant="outline" size="sm">
+        <Button asChild variant="outline" size="sm" className="button-scale">
           <a href={audit.url} target="_blank" rel="noopener noreferrer">
             <ExternalLink className="w-4 h-4" />
           </a>
