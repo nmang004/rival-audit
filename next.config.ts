@@ -3,25 +3,22 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
 
-  // Ensure these packages are bundled in serverless functions (not externalized)
-  // This fixes "Cannot find module 'axe-core'" error on Vercel
+  // Keep these packages external (don't bundle) because they have native dependencies
+  // DO NOT add axe-core or @axe-core/puppeteer here - they need to be bundled
   serverExternalPackages: ['puppeteer', 'puppeteer-core', '@sparticuz/chromium'],
 
-  // Force webpack to bundle axe-core instead of treating it as external
+  // Explicitly tell Next.js to bundle these packages (override default externalization)
+  bundlePagesRouterDependencies: true,
+
   webpack: (config, { isServer }) => {
     if (isServer) {
-      // Don't externalize these packages in serverless functions
-      config.externals = config.externals || [];
-
-      // Ensure axe-core is bundled, not treated as external
-      if (Array.isArray(config.externals)) {
-        config.externals = config.externals.filter((external: any) => {
-          if (typeof external === 'string') {
-            return !external.includes('axe-core');
-          }
-          return true;
-        });
-      }
+      // Add alias to ensure axe-core can be resolved
+      config.resolve = config.resolve || {};
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'axe-core': require.resolve('axe-core'),
+        '@axe-core/puppeteer': require.resolve('@axe-core/puppeteer'),
+      };
     }
     return config;
   },
