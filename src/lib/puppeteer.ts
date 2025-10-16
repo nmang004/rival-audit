@@ -1,24 +1,44 @@
-import puppeteer, { Browser, Page } from 'puppeteer';
+import type { Browser, Page } from 'puppeteer';
 import { AxePuppeteer } from '@axe-core/puppeteer';
 import { CaptureResult, AccessibilityResult } from '@/types';
 import sharp from 'sharp';
 
-let browser: Browser | null = null;
+// Use unknown for browser to avoid type conflicts between puppeteer and puppeteer-core
+let browser: unknown = null;
 
 async function getBrowser(): Promise<Browser> {
-  if (!browser || !browser.connected) {
-    browser = await puppeteer.launch({
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--disable-gpu',
-      ],
-    });
+  if (!browser || !(browser as Browser).connected) {
+    // Check if we're in production (Vercel) or development
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    if (isProduction) {
+      // Use @sparticuz/chromium for serverless environments (Vercel)
+      const chromium = await import('@sparticuz/chromium');
+      const puppeteerCore = await import('puppeteer-core');
+
+      browser = await puppeteerCore.default.launch({
+        args: chromium.default.args,
+        defaultViewport: null,
+        executablePath: await chromium.default.executablePath(),
+        headless: true,
+      });
+    } else {
+      // Use regular puppeteer for local development
+      const puppeteer = await import('puppeteer');
+
+      browser = await puppeteer.default.launch({
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--disable-gpu',
+        ],
+      });
+    }
   }
-  return browser;
+  return browser as Browser;
 }
 
 /**
@@ -588,7 +608,7 @@ export async function extractSEOData(url: string): Promise<{
 
 export async function closeBrowser() {
   if (browser) {
-    await browser.close();
+    await (browser as Browser).close();
     browser = null;
   }
 }
