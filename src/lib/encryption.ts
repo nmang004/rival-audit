@@ -2,7 +2,13 @@ import { createCipheriv, createDecipheriv, randomBytes } from 'crypto';
 
 // Use AES-256-GCM for encryption
 const ALGORITHM = 'aes-256-gcm';
-const KEY = process.env.ENCRYPTION_KEY || 'default-32-character-secret-key!'; // Must be 32 characters for AES-256
+
+// IMPORTANT: Set ENCRYPTION_KEY environment variable in production
+if (!process.env.ENCRYPTION_KEY && process.env.NODE_ENV === 'production') {
+  throw new Error('ENCRYPTION_KEY environment variable is required in production');
+}
+
+const KEY = process.env.ENCRYPTION_KEY || 'default-32-character-secret-key!'; // Development fallback only
 const KEY_BUFFER = Buffer.from(KEY.padEnd(32, '0').slice(0, 32));
 
 /**
