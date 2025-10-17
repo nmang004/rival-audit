@@ -1,7 +1,11 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 
-const UPLOAD_DIR = path.join(process.cwd(), 'public', 'uploads');
+// Use /tmp directory in production (Vercel serverless), public/uploads in dev
+const isProduction = process.env.NODE_ENV === 'production';
+const UPLOAD_DIR = isProduction
+  ? '/tmp/uploads'
+  : path.join(process.cwd(), 'public', 'uploads');
 
 // Ensure upload directory exists
 async function ensureUploadDir() {
@@ -12,39 +16,63 @@ async function ensureUploadDir() {
   }
 }
 
+/**
+ * Upload screenshot to storage
+ * In production (Vercel): Returns base64 data URI (filesystem is read-only)
+ * In development: Saves to public/uploads and returns public URL
+ */
 export async function uploadScreenshot(
   buffer: Buffer,
   auditId: string,
   type: 'desktop' | 'mobile'
 ): Promise<string> {
-  await ensureUploadDir();
+  if (isProduction) {
+    // In production (Vercel serverless), return base64 data URI
+    // This avoids filesystem issues and works with Prisma's string fields
+    const base64 = buffer.toString('base64');
+    return `data:image/png;base64,${base64}`;
+  } else {
+    // In development, save to filesystem for easier debugging
+    await ensureUploadDir();
 
-  const filename = `${auditId}-${type}-${Date.now()}.png`;
-  const filepath = path.join(UPLOAD_DIR, filename);
+    const filename = `${auditId}-${type}-${Date.now()}.png`;
+    const filepath = path.join(UPLOAD_DIR, filename);
 
-  await fs.writeFile(filepath, buffer);
+    await fs.writeFile(filepath, buffer);
 
-  // Return public URL
-  return `/uploads/${filename}`;
+    // Return public URL
+    return `/uploads/${filename}`;
+  }
 }
 
 export async function uploadFile(
   buffer: Buffer,
   filename: string
 ): Promise<string> {
-  await ensureUploadDir();
+  if (isProduction) {
+    // In production, save to /tmp (writable in Vercel)
+    await ensureUploadDir();
+    const uniqueFilename = `${Date.now()}-${filename}`;
+    const filepath = path.join(UPLOAD_DIR, uniqueFilename);
+    await fs.writeFile(filepath, buffer);
 
-  const uniqueFilename = `${Date.now()}-${filename}`;
-  const filepath = path.join(UPLOAD_DIR, uniqueFilename);
-
-  await fs.writeFile(filepath, buffer);
-
-  return `/uploads/${uniqueFilename}`;
+    // Return base64 data URI for production
+    const base64 = buffer.toString('base64');
+    const mimeType = filename.endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream';
+    return `data:${mimeType};base64,${base64}`;
+  } else {
+    // In development, save to public/uploads
+    await ensureUploadDir();
+    const uniqueFilename = `${Date.now()}-${filename}`;
+    const filepath = path.join(UPLOAD_DIR, uniqueFilename);
+    await fs.writeFile(filepath, buffer);
+    return `/uploads/${uniqueFilename}`;
+  }
 }
 
 /**
  * Upload Excel file to storage
- * Returns public URL for download
+ * Returns download URL (public URL in dev, data URI in production)
  */
 export async function uploadExcel(
   buffer: Buffer,
@@ -61,14 +89,20 @@ export async function uploadExcel(
 
   console.log('[Storage] Excel file uploaded:', uniqueFilename);
 
-  // Return public URL
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-  return `${appUrl}/uploads/${uniqueFilename}`;
+  if (isProduction) {
+    // Return base64 data URI for production (Vercel serverless)
+    const base64 = buffer.toString('base64');
+    return `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${base64}`;
+  } else {
+    // Return public URL for development
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    return `${appUrl}/uploads/${uniqueFilename}`;
+  }
 }
 
 /**
  * Upload PDF report to storage
- * Returns public URL for download
+ * Returns download URL (public URL in dev, data URI in production)
  */
 export async function uploadPDF(
   buffer: Buffer,
@@ -85,9 +119,15 @@ export async function uploadPDF(
 
   console.log('[Storage] PDF file uploaded:', uniqueFilename);
 
-  // Return public URL
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-  return `${appUrl}/uploads/${uniqueFilename}`;
+  if (isProduction) {
+    // Return base64 data URI for production (Vercel serverless)
+    const base64 = buffer.toString('base64');
+    return `data:application/pdf;base64,${base64}`;
+  } else {
+    // Return public URL for development
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    return `${appUrl}/uploads/${uniqueFilename}`;
+  }
 }
 
 // For production, you would use AWS S3:
