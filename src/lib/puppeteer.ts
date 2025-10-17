@@ -386,14 +386,151 @@ export async function captureAuditData(url: string): Promise<{
     console.log('[Puppeteer] Step 3: Running accessibility tests...');
     let accessibilityData: AccessibilityResult;
 
-    try {
-      // Check if page is still connected before running axe
-      if (!page.isClosed()) {
-        // Run axe with timeout protection
-        const axeTimeout = process.env.NODE_ENV === 'production' ? 10000 : 30000; // 10s in prod, 30s in dev
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    if (isProduction) {
+      // SERVERLESS: Use simple manual accessibility checks (axe-core has EBADF issues in Vercel)
+      console.log('[Puppeteer] ⚡ SERVERLESS: Running manual accessibility checks...');
+
+      try {
+        const manualChecks = await page.evaluate(() => {
+          const violations: Array<{
+            id: string;
+            impact: 'minor' | 'moderate' | 'serious' | 'critical';
+            description: string;
+            help: string;
+            helpUrl: string;
+            nodes: number;
+          }> = [];
+
+          // Check 1: Images without alt text
+          const imagesWithoutAlt = Array.from(document.querySelectorAll('img:not([alt])')).length;
+          if (imagesWithoutAlt > 0) {
+            violations.push({
+              id: 'image-alt',
+              impact: 'serious',
+              description: 'Images must have alternate text',
+              help: `Found ${imagesWithoutAlt} images without alt attributes`,
+              helpUrl: 'https://dequeuniversity.com/rules/axe/4.4/image-alt',
+              nodes: imagesWithoutAlt,
+            });
+          }
+
+          // Check 2: Form inputs without labels
+          const inputsWithoutLabels = Array.from(document.querySelectorAll('input:not([type="hidden"]):not([aria-label]):not([id])')).length;
+          if (inputsWithoutLabels > 0) {
+            violations.push({
+              id: 'label',
+              impact: 'serious',
+              description: 'Form elements must have labels',
+              help: `Found ${inputsWithoutLabels} inputs without labels or aria-label`,
+              helpUrl: 'https://dequeuniversity.com/rules/axe/4.4/label',
+              nodes: inputsWithoutLabels,
+            });
+          }
+
+          // Check 3: Missing page title
+          if (!document.title || document.title.trim() === '') {
+            violations.push({
+              id: 'document-title',
+              impact: 'serious',
+              description: 'Documents must have a title',
+              help: 'Page is missing a title element',
+              helpUrl: 'https://dequeuniversity.com/rules/axe/4.4/document-title',
+              nodes: 1,
+            });
+          }
+
+          // Check 4: Missing lang attribute
+          if (!document.documentElement.hasAttribute('lang')) {
+            violations.push({
+              id: 'html-has-lang',
+              impact: 'serious',
+              description: 'The html element must have a lang attribute',
+              help: 'Missing lang attribute on html element',
+              helpUrl: 'https://dequeuniversity.com/rules/axe/4.4/html-has-lang',
+              nodes: 1,
+            });
+          }
+
+          // Check 5: Links without text
+          const linksWithoutText = Array.from(document.querySelectorAll('a')).filter(
+            (a) => !a.textContent?.trim() && !a.getAttribute('aria-label')
+          ).length;
+          if (linksWithoutText > 0) {
+            violations.push({
+              id: 'link-name',
+              impact: 'serious',
+              description: 'Links must have discernible text',
+              help: `Found ${linksWithoutText} links without text or aria-label`,
+              helpUrl: 'https://dequeuniversity.com/rules/axe/4.4/link-name',
+              nodes: linksWithoutText,
+            });
+          }
+
+          // Check 6: Buttons without text
+          const buttonsWithoutText = Array.from(document.querySelectorAll('button')).filter(
+            (btn) => !btn.textContent?.trim() && !btn.getAttribute('aria-label')
+          ).length;
+          if (buttonsWithoutText > 0) {
+            violations.push({
+              id: 'button-name',
+              impact: 'serious',
+              description: 'Buttons must have discernible text',
+              help: `Found ${buttonsWithoutText} buttons without text or aria-label`,
+              helpUrl: 'https://dequeuniversity.com/rules/axe/4.4/button-name',
+              nodes: buttonsWithoutText,
+            });
+          }
+
+          return violations;
+        });
+
+        // Calculate score based on manual checks
+        let accessibilityScore = 100;
+        manualChecks.forEach((v) => {
+          switch (v.impact) {
+            case 'critical':
+              accessibilityScore -= 10;
+              break;
+            case 'serious':
+              accessibilityScore -= 5;
+              break;
+            case 'moderate':
+              accessibilityScore -= 2;
+              break;
+            case 'minor':
+              accessibilityScore -= 1;
+              break;
+          }
+        });
+        accessibilityScore = Math.max(0, accessibilityScore);
+
+        accessibilityData = {
+          violations: manualChecks,
+          score: accessibilityScore,
+          totalTests: manualChecks.length,
+        };
+        console.log(`[Puppeteer] ✓ Manual accessibility checks complete (${manualChecks.length} violations found)`);
+      } catch (manualError) {
+        console.error('[Puppeteer] Manual accessibility checks failed:', manualError);
+        accessibilityData = {
+          violations: [],
+          score: 0,
+          totalTests: 0,
+        };
+      }
+    } else {
+      // DEVELOPMENT: Use full axe-core analysis
+      try {
+        if (page.isClosed()) {
+          throw new Error('Page closed before accessibility analysis');
+        }
+
+        const axeTimeout = 30000;
         const axeResults = await Promise.race([
           new AxePuppeteer(page)
-            .options({ resultTypes: ['violations'] }) // Only get violations for faster analysis
+            .options({ resultTypes: ['violations'] })
             .analyze(),
           new Promise<never>((_, reject) =>
             setTimeout(() => reject(new Error('Axe analysis timeout')), axeTimeout)
@@ -434,18 +571,14 @@ export async function captureAuditData(url: string): Promise<{
           totalTests: axeResults.violations.length,
         };
         console.log('[Puppeteer] ✓ Accessibility analysis complete');
-      } else {
-        throw new Error('Page closed before accessibility analysis');
+      } catch (axeError) {
+        console.error('[Puppeteer] Accessibility analysis failed:', axeError);
+        accessibilityData = {
+          violations: [],
+          score: 0,
+          totalTests: 0,
+        };
       }
-    } catch (axeError) {
-      console.error('[Puppeteer] Accessibility analysis failed, using fallback:', axeError);
-      // Provide fallback data if axe-core fails
-      accessibilityData = {
-        violations: [],
-        score: 0, // Unknown score, set to 0
-        totalTests: 0,
-      };
-      console.log('[Puppeteer] ⚠ Using fallback accessibility data');
     }
 
     // Step 4: Take desktop screenshot
