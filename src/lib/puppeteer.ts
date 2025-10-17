@@ -175,13 +175,13 @@ async function waitForPageLoad(page: Page, url: string): Promise<void> {
     console.log('[Puppeteer] Navigation failed, trying fallback...');
     await page.goto(url, {
       waitUntil: 'domcontentloaded',
-      timeout: 30000
+      timeout: 30000 // 30s fallback timeout
     });
     console.log('[Puppeteer] Page loaded with domcontentloaded (fallback)');
   }
 
   if (isProduction) {
-    // SERVERLESS MODE: Ultra-fast loading (target: <20 seconds total)
+    // SERVERLESS MODE: Balanced loading optimized for 180s timeout
     console.log('[Puppeteer] ⚡ SERVERLESS: Quick load (2s wait)...');
     await new Promise(resolve => setTimeout(resolve, 2000)); // 2s for JS execution
 
@@ -390,7 +390,7 @@ export async function captureAuditData(url: string): Promise<{
       // Check if page is still connected before running axe
       if (!page.isClosed()) {
         // Run axe with timeout protection
-        const axeTimeout = process.env.NODE_ENV === 'production' ? 15000 : 30000; // 15s in prod, 30s in dev
+        const axeTimeout = process.env.NODE_ENV === 'production' ? 10000 : 30000; // 10s in prod, 30s in dev
         const axeResults = await Promise.race([
           new AxePuppeteer(page)
             .options({ resultTypes: ['violations'] }) // Only get violations for faster analysis

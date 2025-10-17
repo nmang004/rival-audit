@@ -4,8 +4,8 @@ import prisma from '@/lib/prisma';
 import { z } from 'zod';
 import { executeAudit } from '@/lib/workflows/audit-workflow';
 
-// Configure Vercel function to allow longer execution time (60 seconds)
-export const maxDuration = 60; // Maximum duration in seconds (requires Vercel Pro plan, otherwise 10s on Hobby)
+// Configure Vercel function to allow longer execution time (180 seconds = 3 minutes)
+export const maxDuration = 180; // Maximum duration in seconds (requires Vercel Pro/Enterprise plan)
 export const dynamic = 'force-dynamic'; // Ensure the route is always dynamic
 
 const createAuditSchema = z.object({
