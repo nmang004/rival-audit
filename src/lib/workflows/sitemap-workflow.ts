@@ -39,10 +39,12 @@ export async function executeSitemapAudit(
     // Step 3: Analyze URL structure
     console.log('[Sitemap Workflow] Step 2/4: Analyzing URL structure...');
     const urlStructureAnalysis = await analyzeUrlStructure(urls);
+    console.log(`[Sitemap Workflow] ✓ URL structure analyzed: ${urlStructureAnalysis.totalIssues} issues found`);
 
     // Step 4: Run content gap analysis with Claude
     console.log('[Sitemap Workflow] Step 3/4: Analyzing content gaps with Claude...');
     const contentGapAnalysis = await analyzeContentGaps(urls, domain);
+    console.log(`[Sitemap Workflow] ✓ Content gaps analyzed: ${contentGapAnalysis.totalGaps} gaps found`);
 
     // Step 5: Store results in database
     console.log('[Sitemap Workflow] Step 4/4: Storing results...');

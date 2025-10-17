@@ -3,6 +3,10 @@ import { auth } from '@clerk/nextjs/server';
 import { executeSitemapAudit } from '@/lib/workflows/sitemap-workflow';
 import prisma from '@/lib/prisma';
 
+// Configure Vercel function to allow longer execution time for sitemap analysis
+export const maxDuration = 180; // 3 minutes for Claude analysis
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
     const { userId } = await auth();
@@ -63,19 +67,43 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Sitemap Audit API] Created audit ${audit.id}`);
 
-    // Execute sitemap audit in background (don't await)
-    executeSitemapAudit(audit.id, sitemapUrl)
-      .then(() => {
-        console.log(`[Sitemap Audit ${audit.id}] Completed successfully`);
-      })
-      .catch((error) => {
-        console.error(`[Sitemap Audit ${audit.id}] Failed:`, error);
+    // Execute sitemap audit synchronously (wait for completion)
+    try {
+      await executeSitemapAudit(audit.id, sitemapUrl);
+      console.log(`[Sitemap Audit ${audit.id}] Completed successfully`);
+
+      // Fetch the updated audit with results
+      const completedAudit = await prisma.audit.findUnique({
+        where: { id: audit.id },
+        include: {
+          createdBy: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
       });
 
-    return NextResponse.json({
-      success: true,
-      data: audit,
-    });
+      return NextResponse.json({
+        success: true,
+        data: completedAudit,
+        message: 'Sitemap audit completed successfully',
+      });
+    } catch (auditError) {
+      console.error(`[Sitemap Audit ${audit.id}] Failed:`, auditError);
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Sitemap audit failed',
+          details: auditError instanceof Error ? auditError.message : String(auditError),
+          auditId: audit.id,
+        },
+        { status: 500 }
+      );
+    }
   } catch (error) {
     console.error('Error creating sitemap audit:', error);
     return NextResponse.json(
