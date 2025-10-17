@@ -17,10 +17,18 @@ async function getBrowser(): Promise<Browser> {
       const puppeteerCore = await import('puppeteer-core');
 
       browser = await puppeteerCore.default.launch({
-        args: chromium.default.args,
+        args: [
+          ...chromium.default.args,
+          // Additional args for better stability in serverless
+          '--disable-dev-shm-usage', // Reduce memory usage
+          '--disable-features=IsolateOrigins', // Reduce process overhead while keeping site-per-process
+          '--disable-blink-features=AutomationControlled', // Avoid detection
+        ],
         defaultViewport: null,
         executablePath: await chromium.default.executablePath(),
         headless: true,
+        // Increase protocol timeout to prevent EBADF errors
+        protocolTimeout: 60000, // 60 seconds
       });
     } else {
       // Use regular puppeteer for local development
@@ -376,41 +384,69 @@ export async function captureAuditData(url: string): Promise<{
 
     // Step 3: Run accessibility tests (on same page load)
     console.log('[Puppeteer] Step 3: Running accessibility tests...');
-    const axeResults = await new AxePuppeteer(page).analyze();
+    let accessibilityData: AccessibilityResult;
 
-    const violations = axeResults.violations.map((violation) => ({
-      id: violation.id,
-      impact: violation.impact as 'minor' | 'moderate' | 'serious' | 'critical',
-      description: violation.description,
-      help: violation.help,
-      helpUrl: violation.helpUrl,
-      nodes: violation.nodes.length,
-    }));
+    try {
+      // Check if page is still connected before running axe
+      if (!page.isClosed()) {
+        // Run axe with timeout protection
+        const axeTimeout = process.env.NODE_ENV === 'production' ? 15000 : 30000; // 15s in prod, 30s in dev
+        const axeResults = await Promise.race([
+          new AxePuppeteer(page)
+            .options({ resultTypes: ['violations'] }) // Only get violations for faster analysis
+            .analyze(),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Axe analysis timeout')), axeTimeout)
+          )
+        ]);
 
-    let accessibilityScore = 100;
-    violations.forEach((v) => {
-      switch (v.impact) {
-        case 'critical':
-          accessibilityScore -= 10;
-          break;
-        case 'serious':
-          accessibilityScore -= 5;
-          break;
-        case 'moderate':
-          accessibilityScore -= 2;
-          break;
-        case 'minor':
-          accessibilityScore -= 1;
-          break;
+        const violations = axeResults.violations.map((violation) => ({
+          id: violation.id,
+          impact: violation.impact as 'minor' | 'moderate' | 'serious' | 'critical',
+          description: violation.description,
+          help: violation.help,
+          helpUrl: violation.helpUrl,
+          nodes: violation.nodes.length,
+        }));
+
+        let accessibilityScore = 100;
+        violations.forEach((v) => {
+          switch (v.impact) {
+            case 'critical':
+              accessibilityScore -= 10;
+              break;
+            case 'serious':
+              accessibilityScore -= 5;
+              break;
+            case 'moderate':
+              accessibilityScore -= 2;
+              break;
+            case 'minor':
+              accessibilityScore -= 1;
+              break;
+          }
+        });
+        accessibilityScore = Math.max(0, accessibilityScore);
+
+        accessibilityData = {
+          violations,
+          score: accessibilityScore,
+          totalTests: axeResults.violations.length,
+        };
+        console.log('[Puppeteer] ✓ Accessibility analysis complete');
+      } else {
+        throw new Error('Page closed before accessibility analysis');
       }
-    });
-    accessibilityScore = Math.max(0, accessibilityScore);
-
-    const accessibilityData: AccessibilityResult = {
-      violations,
-      score: accessibilityScore,
-      totalTests: axeResults.violations.length,
-    };
+    } catch (axeError) {
+      console.error('[Puppeteer] Accessibility analysis failed, using fallback:', axeError);
+      // Provide fallback data if axe-core fails
+      accessibilityData = {
+        violations: [],
+        score: 0, // Unknown score, set to 0
+        totalTests: 0,
+      };
+      console.log('[Puppeteer] ⚠ Using fallback accessibility data');
+    }
 
     // Step 4: Take desktop screenshot
     console.log('[Puppeteer] Step 4: Taking desktop screenshot...');
@@ -433,7 +469,12 @@ export async function captureAuditData(url: string): Promise<{
     });
     const mobileScreenshot = await compressImage(Buffer.from(mobileScreenshotRaw));
 
-    await page.close();
+    // Safe page close
+    try {
+      await page.close();
+    } catch (closeError) {
+      console.warn('[Puppeteer] Warning closing page:', closeError);
+    }
     console.log('[Puppeteer] === Comprehensive audit complete ===');
 
     return {
@@ -443,7 +484,14 @@ export async function captureAuditData(url: string): Promise<{
       seoData,
     };
   } catch (error) {
-    await page.close();
+    // Safe page close on error
+    try {
+      if (!page.isClosed()) {
+        await page.close();
+      }
+    } catch (closeError) {
+      console.warn('[Puppeteer] Warning closing page after error:', closeError);
+    }
     console.error('[Puppeteer] Error in comprehensive audit:', error);
     throw new Error(`Failed to capture audit data: ${error instanceof Error ? error.message : String(error)}`);
   }
@@ -511,47 +559,76 @@ export async function runAccessibilityTests(url: string): Promise<AccessibilityR
 
     // Run axe-core accessibility tests
     console.log('[Puppeteer] Running accessibility tests...');
-    const results = await new AxePuppeteer(page).analyze();
 
-    await page.close();
-
-    const violations = results.violations.map((violation) => ({
-      id: violation.id,
-      impact: violation.impact as 'minor' | 'moderate' | 'serious' | 'critical',
-      description: violation.description,
-      help: violation.help,
-      helpUrl: violation.helpUrl,
-      nodes: violation.nodes.length,
-    }));
-
-    // Calculate score (100 - penalty points)
-    let score = 100;
-    violations.forEach((v) => {
-      switch (v.impact) {
-        case 'critical':
-          score -= 10;
-          break;
-        case 'serious':
-          score -= 5;
-          break;
-        case 'moderate':
-          score -= 2;
-          break;
-        case 'minor':
-          score -= 1;
-          break;
+    try {
+      // Check if page is still connected
+      if (page.isClosed()) {
+        throw new Error('Page closed before accessibility analysis');
       }
-    });
 
-    score = Math.max(0, score);
+      // Run axe with timeout protection
+      const axeTimeout = process.env.NODE_ENV === 'production' ? 15000 : 30000;
+      const results = await Promise.race([
+        new AxePuppeteer(page)
+          .options({ resultTypes: ['violations'] })
+          .analyze(),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Axe analysis timeout')), axeTimeout)
+        )
+      ]);
 
-    return {
-      violations,
-      score,
-      totalTests: results.violations.length,
-    };
+      const violations = results.violations.map((violation) => ({
+        id: violation.id,
+        impact: violation.impact as 'minor' | 'moderate' | 'serious' | 'critical',
+        description: violation.description,
+        help: violation.help,
+        helpUrl: violation.helpUrl,
+        nodes: violation.nodes.length,
+      }));
+
+      // Calculate score (100 - penalty points)
+      let score = 100;
+      violations.forEach((v) => {
+        switch (v.impact) {
+          case 'critical':
+            score -= 10;
+            break;
+          case 'serious':
+            score -= 5;
+            break;
+          case 'moderate':
+            score -= 2;
+            break;
+          case 'minor':
+            score -= 1;
+            break;
+        }
+      });
+
+      score = Math.max(0, score);
+
+      await page.close();
+
+      return {
+        violations,
+        score,
+        totalTests: results.violations.length,
+      };
+    } catch (axeError) {
+      console.error('[Puppeteer] Accessibility analysis failed:', axeError);
+      await page.close();
+
+      // Return fallback data instead of throwing
+      return {
+        violations: [],
+        score: 0,
+        totalTests: 0,
+      };
+    }
   } catch (error) {
-    await page.close();
+    if (!page.isClosed()) {
+      await page.close();
+    }
     throw new Error(`Failed to run accessibility tests: ${error}`);
   }
 }
