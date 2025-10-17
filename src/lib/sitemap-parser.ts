@@ -117,6 +117,8 @@ export async function parseSitemapIndex(indexUrl: string): Promise<string[]> {
 
     const parsed = parser.parse(xmlContent);
 
+    console.log('[Sitemap Index Parser] Parsed structure:', JSON.stringify(parsed, null, 2).substring(0, 500));
+
     if (parsed.sitemapindex && parsed.sitemapindex.sitemap) {
       const sitemapEntries = Array.isArray(parsed.sitemapindex.sitemap)
         ? parsed.sitemapindex.sitemap
@@ -126,11 +128,11 @@ export async function parseSitemapIndex(indexUrl: string): Promise<string[]> {
         .map((entry: { loc?: string }) => entry.loc)
         .filter((url: string | undefined): url is string => !!url);
 
-      console.log(`[Sitemap Index Parser] Found ${sitemapUrls.length} sitemaps`);
+      console.log(`[Sitemap Index Parser] Found ${sitemapUrls.length} sitemaps:`, sitemapUrls);
       return sitemapUrls;
     }
 
-    console.log('[Sitemap Index Parser] No sitemaps found in index');
+    console.log('[Sitemap Index Parser] No sitemaps found in index. Parsed keys:', Object.keys(parsed));
     return [];
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
